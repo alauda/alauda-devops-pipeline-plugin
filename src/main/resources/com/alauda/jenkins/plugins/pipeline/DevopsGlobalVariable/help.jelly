@@ -1,0 +1,1221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+
+
+<style>
+    /* Styles for anchors without href. Negatively offset because of Jenkins header otherwise obscures clicked target. */
+    div.alaudaDevops a:not([href])  {
+    display: block;
+    position: relative;
+    top: -50px;
+    visibility: hidden;
+    }
+    div.alaudaDevops ul li {
+    margin-bottom: 15px;
+    }
+</style>
+<div class="alaudaDevops">
+    <p>
+        The <code>alaudaDevops</code> variable offers convenient access to AlaudaDevops-related functions from a Pipeline
+        script. Each method will be documented using the following conventions:
+    </p>
+    <p style="margin-left: 1em;">
+        <b>Method with closure:</b>
+        <code>receiver.methodName(requiredParameter:type, [ optionalParameter:type]):returnType {…closure body…}</code>
+        <br />
+        <b>Method with return value:</b>
+        <code>receiver.methodName(requiredParameter:type, [ optionalParameter:type]):returnType</code>
+        <br />
+        <br />
+        Return types may be standard types (String, List<![CDATA[&lt;]]>String<![CDATA[&gt;]]>, bool, int, etc.) or complex types,
+        specific to this plugin, which have behaviors of their own (e.g. <a href="#Result"><code>Result</code></a>,
+        <a href="#Selector"><code>Selector</code></a>, <a href="#RolloutManager"><code>RolloutManager</code></a>). These return types are
+        detailed after the methods have been described.
+    </p>
+    <p>
+        <b>Note:</b> Unless otherwise specified, operations within this DSL must be performed within a <code>withCluster</code>
+        closure. Exceptions include <code>alaudaDevops.logLevel</code>, <code>alaudaDevops.verbose</code>, and
+        <code>alaudaDevops.selector</code>.
+    </p>
+    <p>
+        Methods needing a Jenkins agent will implicitly run a <code>node {…}</code> block if you have not wrapped them in one.
+        It is a good idea to enclose a block of steps which should all run on the same node in such a block yourself.
+    </p>
+    <dl>
+        <dt>
+            <code id="alaudaDevops_withCluster">alaudaDevops.withCluster([clusterName:String, [ credential:String]]) {…}</code>
+        </dt>
+        <dd>
+            <p>
+                Declares that AlaudaDevops operations within the closure body should be executed against the
+                specified clusterName. The statement also implicitly acts as both a
+                <a href="#alaudaDevops_withProject"><code>alaudaDevops.withProject</code></a> (establishing the default project within
+                the closure) and <a href="#alaudaDevops_withCredentials"><code>alaudaDevops.withCredentials</code></a> (establishing the default authorization
+                token within the closure).
+                <br />
+                <br />
+                <code>withCluster</code> may not be contained within a
+                <a href="#alaudaDevops_withProject"><code>alaudaDevops.withProject</code></a> or
+                <a href="#alaudaDevops_withCredentials"><code>alaudaDevops.withCredentials</code></a> closure.
+                <br />
+                <br />
+                When <code>withCluster</code> closures are nested within each other, AlaudaDevops operations will use the
+                clusterName information associated with the most tightly scoped occurrence.
+            </p>
+            <ul>
+                <li>
+                    <b>clusterName</b> - The name of an AlaudaDevops clusterName defined in the global configuration OR a String
+                    literal URL (e.g. "https://10.13.137.186:8443"). The special protocol "insecure://" may also be used if https is
+                    desired but TLS certificate verification should be disabled.
+                    <br />
+                    <br />
+                    Use of the Jenkins global configuration method is highly encouraged as it will insulate your pipeline
+                    scripts from changes to your server (e.g. a change in its IP address). It will also allow
+                    <code>withCluster</code> to implicitly act as both
+                    <a href="#alaudaDevops_withProject"><code>alaudaDevops.withProject</code></a> (changing the target project within
+                    the closure) and <a href="#alaudaDevops_withCredentials"><code>alaudaDevops.withCredentials</code></a> (changing the authorization
+                    token within the closure) if project and authorization information is associated with the clusterName
+                    configuration.
+                    <br />
+                    <br />
+                    If the clusterName argument is omitted, the plugin will try to derive clusterName information in the following ways:
+                    <ol>
+                        <li>A lookup for a clusterName named "default" in the Jenkins global configuration.</li>
+                        <li>Any host information stored in the environment variables KUBERNETES_SERVICE_HOST:KUBERNETES_SERVICE_PORT_HTTPS .</li>
+                    </ol>
+                </li>
+                <li>
+                    <b>credential</b> - The credentialId of an AlaudaDevops Auth token stored in the Jenkins credential
+                    manager OR a String literal token value with which to authenticate. The use of the Jenkins credential
+                    manager is highly encouraged because the token will be encrypted and, if the token value changes,
+                    your scripts will not need to be updated. This parameter overrides any default credentials associated
+                    with the clusterName in the Jenkins global configuration.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+          <code id="alaudaDevops_cluster">alaudaDevops.cluster():String</code>
+        </dt>
+        <dd>
+            <p  style="margin-left: 1em; color:#657383;">
+                <code>
+                    def clusterUrl = alaudaDevops.cluster();<br />
+                    echo "Now using cluster with url $${clusterUrl}"<br />
+                </code>
+            </p>
+            <p>
+                Returns the url of the currently scoped cluster.
+            </p>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_skiptlsverify">alaudaDevops.skipTLSVerify():Boolean</code>
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                <code>
+                    echo "SkipTLSVerify is set to $${alaudaDevops.skipTLSVerify()}"<br />
+                </code>
+            </p>
+            <p>
+                Returns true if SkipTLSVerify is set for the server connection, false otherwise.
+            </p>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_doAs">alaudaDevops.doAs(credential:String):Object {…}</code>
+        </dt>
+        <dd>
+            <p>
+               DEPRECATED: See <a href="#alaudaDevops_withCredentials">alaudaDevops.withCredentials</a>
+
+                doAs() has been deprecated in favor of withCredentials(), but is currently
+                still supported for use in existing scripts.
+            </p>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_withCredentials">alaudaDevops.withCredentials(credential:String):Object {…}</code>
+        </dt>
+        <dd>
+            <p>
+                Specifies that AlaudaDevops operations within the closure body should use the identified credential.
+                The return value is the value returned by (or the value of the last statement within) the closure.
+                <br />
+                <br />
+                When <code>withCredentials</code> closures are nested, AlaudaDevops operations will use the
+                credential information associated with the most tightly scoped occurrence.
+                <br />
+                <br />
+                If no credential information is found within a given scope, it is assumed that Jenkins is running
+                within an AlaudaDevops Pod. An attempt will be made to read a token from the Jenkins master
+                filesystem at <b>/run/secrets/kubernetes.io/serviceaccount/token</b>.
+              </p>
+                <ul>
+                    <li>
+                        <b>credential</b> - The credentialId of an AlaudaDevops Auth token stored in the Jenkins credential
+                        manager OR a String literal token value with which to authenticate. The use of the Jenkins credential
+                        manager is highly encouraged because the token will be encrypted and, if the token value changes,
+                        your scripts will not need to be updated.
+                    </li>
+                </ul>
+        </dd>
+        <dt>
+        <code id="alaudaDevops_withProject">alaudaDevops.withProject(projectName:String):Object {…}</code>
+        </dt>
+        <dd>
+            <p  style="margin-left: 1em; color:#657383;">
+                <code>
+                    def template = alaudaDevops.withProject('alaudaDevops') {<br />
+                    <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>alaudaDevops.selector('template','mongodb-ephemeral').object()<br />
+                    }<br />
+                </code>
+            </p>
+            <p>
+                Specifies that AlaudaDevops operations within the closure body should target the identified project.
+                The return value is the value returned by (or the value of the last statement within) the closure.
+                <br />
+                <br />
+                When <code>withProject</code> closures are nested, AlaudaDevops operations will use the
+                project information associated with the most tightly scoped occurrence.
+                <br />
+                <br />
+                If no project information is found within a given scope, it is assumed that Jenkins is running
+                within an AlaudaDevops Pod. An attempt will be made to read the current project from the Jenkins master
+                filesystem at <b>/run/secrets/kubernetes.io/serviceaccount/project</b>.
+            </p>
+            <ul>
+                <li>
+                    <b>projectName</b> - The name of the project to target for operations within the closure.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_project">alaudaDevops.project():String</code>
+        </dt>
+        <dd>
+            <p  style="margin-left: 1em; color:#657383;">
+                <code>
+                    def projectName = alaudaDevops.project();<br/>
+                    echo "Now using project $${projectName}"<br/>
+                </code>
+              </p>
+            <p>
+                Returns the name of the currently scoped project.
+            </p>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_selector">alaudaDevops.selector(…):Selector</code>
+        </dt>
+        <dd>
+            <p>
+              <code>selector</code> has multiple variations:
+            </p>
+            <ul>
+                <li>
+                    <code>alaudaDevops.selector(kind:String):DynamicSelector</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.selector("nodes")</code></i>
+                </li>
+                <li>
+                    <code>alaudaDevops.selector(kind:String,labels:Map&lt;String,String&gt;):DynamicSelector</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.selector("pod", [ alabel : "avalue", l2: "v2" ])</code></i>
+                </li>
+                <li>
+                    <code>alaudaDevops.selector(kind:String,name:String):StaticSelector</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.selector("dc", "frontend")</code></i>
+                </li>
+                <li>
+                    <code>alaudaDevops.selector(qualifiedName:String):StaticSelector</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.selector("dc/mysql")</code></i>
+                </li>
+                <li>
+                    <code>alaudaDevops.selector(names:List&lt;String&gt;):StaticSelector</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.selector([ "dc/jenkins", "build/ruby1" ])</code></i>
+                </li>
+            </ul>
+            <p>
+                <b>Context:</b> Does not need to be contained within <a href="#alaudaDevops_withCluster"><code>alaudaDevops.withCluster</code></a>.
+                <br />
+                <br />
+                Creates a <a href="#Selector">Selector</a> object (either a <a href="#DynamicSelector">DynamicSelector</a> or a
+                <a href="#StaticSelector">StaticSelector</a> depending on the invocation) which can be stored
+                away in a variable or used inline within the DSL. The creation of a Selector does not perform any
+                immediate operation on an AlaudaDevops clusterName -- it merely describes a grouping of objects which
+                can be subsequently be acted on by methods exposed by the Selector object.
+                <br />
+                <br />
+                Operations performed using a given Selector will be relative to the context in which those operations
+                are encountered. That is, the context of surrounding
+                <a href="#alaudaDevops_withCluster"><code>alaudaDevops.withCluster</code></a>,
+                <a href="#alaudaDevops_withProject"><code>alaudaDevops.withProject</code></a>,
+                <a href="#alaudaDevops_withCredentials"><code>alaudaDevops.withCredentials</code></a> closures. For example, a Selector
+                can be established once and subsequently used within a variety of
+                <code>alaudaDevops.withCluster</code> closures. Each time a method
+                is invoked on the Selector, the clusterName affected will differ depending on the
+                <code>alaudaDevops.withCluster</code> which contains the invocation.
+              </p>
+              <ul>
+                  <li>
+                      <b>kind</b> - An AlaudaDevops kind to select. Established
+                      abbreviations are supported (e.g. "bc"->"buildconfig", "dc"->"deploymentconfig", etc.).
+                  </li>
+                  <li>
+                      <b>name</b> - The name of an object which, when paired with a kind, uniquely identifies an object.
+                  </li>
+                  <li>
+                      <b>labels</b> - A Groovy map of labels with which to refine a selector. Only resources containing
+                      all label pairs will be selected.
+                  </li>
+                  <li>
+                      <b>qualifiedName</b> - A qualified object name of the form "kind/name".
+                  </li>
+              </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_create">alaudaDevops.create(…):StaticSelector</code><br />
+            <code id="alaudaDevops_replace">alaudaDevops.replace(…):StaticSelector</code><br />
+            <code id="alaudaDevops_apply">alaudaDevops.apply(…):StaticSelector</code><br />
+        </dt>
+        <dd>
+            <p>
+                <code>create</code>, <code>replace</code>, and <code>apply</code> have identical argument signatures. <code>create</code> is used in the variations below,
+                but the same pattern applies to each of these methods:
+            </p>
+            <ul>
+                <li>
+                    <code>alaudaDevops.create(obj:Map, [ args...:String]):StaticSelector</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.create([ kind : "DeploymentConfig", metadata: [ ... ], ... ])</code></i>
+                </li>
+                <li>
+                    <code>alaudaDevops.create(list:List&lt;Map&gt;, [ args...:String]):StaticSelector</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.create([ objModel1, objModel1, ... ])</code></i>
+                </li>
+                <li>
+                    <code>alaudaDevops.create(markup:String, [ args...:String]):StaticSelector</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.create("{ \"metadata\" : { ... } ... ")</code></i>
+                </li>
+                <li>
+                    <code>alaudaDevops.create(subVerb:String, [ args...:String]):StaticSelector</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.create("serviceaccount", "jenkins")</code></i>
+                </li>
+            </ul>
+            <p>
+                Requests AlaudaDevops to create/replace/apply a new object. The object may be defined using a Groovy map or as a String
+                containing JSON or YAML. The method returns a StaticSelector containing the names of the objects created/modified.
+            </p>
+            <ul>
+                <li>
+                    <b>obj</b> - A Groovy Map which models the content of the object. The model will be converted to
+                    JSON prior to being sent to the API Server.
+                </li>
+                <li>
+                    <b>list</b> - A List of Groovy Map objects which model the content of multiple AlaudaDevops object. The models
+                    will be merged into an AlaudaDevops List and then converted to JSON prior to being sent to the API Server.
+                </li>
+                <li>
+                    <b>markup</b> - JSON or YAML to send directly to the create API.
+                </li>
+                <li>
+                    <b>subVerb</b> - An argument which is neither JSON or YAML. It will be passed directly to the main verb as an argument.
+                </li>
+                <li>
+                    <b>args...</b> - A list of arguments which will be sent verbatim to the AlaudaDevops command line tool.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_process">alaudaDevops.process(…):List</code>
+        </dt>
+        <dd>
+            <p>
+              <code>process</code> has multiple variations:
+            </p>
+            <ul>
+                <li>
+                    <code>alaudaDevops.process(json:String, [args...:String]):List</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.process("{ \"metadata\": ... }", "-p", "PARAM=VALUE")</code></i><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.process(readFile(file:'template.json'), "-p", "PARAM=VALUE")</code></i>
+                </li>
+                <li>
+                    <code>alaudaDevops.process(obj:Map, [args...:String]):List</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.process([ metadata: [... ] ],"-p", "PARAM=VALUE")</code></i>
+                </li>
+                <li>
+                    <code>alaudaDevops.process(templateName:String, [args...:String]):List</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.process("alaudaDevops//foo","-p=PARAM=VALUE")</code></i>
+                </li>
+            </ul>
+            <p>
+                Processes an AlaudaDevops template, using any specified parameter values, and returns a Groovy
+                List where each element models an object which results from processing the template.
+                The List can subsequently be passed to <code>alaudaDevops.create</code>,
+                <code>alaudaDevops.replace</code>, <code>alaudaDevops.apply</code>, or <code>alaudaDevops.delete</code>.
+            </p>
+            <ul>
+                <li>
+                    <b>json</b> - A literal string containing JSON to process.
+                </li>
+                <li>
+                    <b>obj</b> - A Groovy map which models an AlaudaDevops template.
+                </li>
+                <li>
+                    <b>templateName</b> - The name of a template object stored in AlaudaDevops.
+                </li>
+                <li>
+                    <b>args...</b> - Arguments that will be passed verbatim to the AlaudaDevops process facility.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_patch">alaudaDevops.patch(…):Result</code>
+        </dt>
+        <dd>
+            <ul>
+                <li>
+                    <code>alaudaDevops.patch(obj:String, patch:String, [args...:String]):Result</code><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.patch("bc/myBuildConfig", '\'{"spec":{"source":{"git":{"ref": "development"}}}}\'')</code></i><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.patch(readFile('example-buildconfig.yaml'), '\'{"spec":{"source":{"git":{"ref": "development"}}}}\'')</code></i><br />
+                    <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.patch('https://raw.githubusercontent.com/exampleuser/examplerepo/master/example-buildconfig.json', '\'{"spec":{"source":{"git":{"ref": "development"}}}}\'')</code></i><br />
+                </li>
+            </ul>
+            <p>
+                Update field(s) of a resource using strategic merge patch, JSON and YAML formats are accepted.
+                The patch must be surrounded by escaped quotes, either single or double, depending on what type
+                of quotes you used to surround your field names and data.
+            </p>
+            <ul>
+                <li>
+                    <b>obj</b> - A selector for the resource that you want to patch.
+                </li>
+                <li>
+                    <b>patch</b> - The patch to be applied to the resource JSON file, must be quoted.
+                </li>
+                <li>
+                    <b>args...</b> - Arguments that will be passed verbatim to the AlaudaDevops process facility.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_newProject">alaudaDevops.newProject(name:String, [args...:String]):Result</code><br />
+        </dt>
+        <dd>
+            <p>
+              <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.newProject("ruby-temp","--display-name", "Ruby temporary")</code></i>
+                <br />
+                Creates a new AlaudaDevops project.
+            </p>
+            <ul>
+                <li>
+                    <b>name</b> - The name of the project to create.
+                </li>
+                <li>
+                    <b>args...</b> - A list of arguments which will be sent verbatim to the AlaudaDevops new-project tool.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_newApp">alaudaDevops.newApp(args...:String):StaticSelector</code><br />
+        </dt>
+        <dd>
+            <p>
+                <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.newApp("https://github.com/alaudaDevops/ruby-hello-world")</code></i>
+                <br />
+                Invokes the AlaudaDevops new-app facility. The Selector returned identifies the objects created by the request.
+             </p>
+            <ul>
+                <li>
+                    <b>args...</b> - A list of arguments which will be sent verbatim to the AlaudaDevops new-app tool.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_newBuild">alaudaDevops.newBuild(args...:String):StaticSelector</code><br />
+        </dt>
+        <dd>
+            <p>
+                <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.newBuild(".","--docker-image=repo/langimage")</code></i>
+                <br />
+                Invokes the AlaudaDevops new-build facility. The Selector returned identifies the objects created by the request.
+            </p>
+            <ul>
+                <li>
+                    <b>args...</b> - A list of arguments which will be sent verbatim to the AlaudaDevops new-build tool.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_startBuild">alaudaDevops.startBuild(args...:String):StaticSelector</code><br />
+        </dt>
+        <dd>
+            <p>
+                <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.startBuild("--from-build=hello-world-1")</code></i>
+                <br />
+                Invokes the AlaudaDevops start-build facility allowing the caller to specify command line arguments. This invocation
+                differs from the <a href="#Selector_startBuild"><code>Selector.startBuild</code></a> method as
+                the caller to this method must supply the BuildConfig name, if any.
+                <br />
+                The Selector returned identifies the objects created by the request.
+            </p>
+            <ul>
+                <li>
+                    <b>args...</b> - A list of arguments which will be sent verbatim to the AlaudaDevops start-build tool.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_exec">alaudaDevops.exec(args...:String):Result</code><br />
+            <code id="alaudaDevops_idle">alaudaDevops.idle(args...:String):Result</code><br />
+            <code id="alaudaDevops_import">alaudaDevops._import(args...:String):Result</code><br />
+            <code id="alaudaDevops_policy">alaudaDevops.policy(args...:String):Result</code><br />
+            <code id="alaudaDevops_run">alaudaDevops.run(args...:String):Result</code><br />
+            <code id="alaudaDevops_rsh">alaudaDevops.rsh(args...:String):Result</code><br />
+            <code id="alaudaDevops_rsync">alaudaDevops.rsync(args...:String):Result</code><br />
+            <code id="alaudaDevops_secrets">alaudaDevops.secrets(args...:String):Result</code><br />
+            <code id="alaudaDevops_set">alaudaDevops.set(args...:String):Result</code><br />
+            <code id="alaudaDevops_tag">alaudaDevops.tag(args...:String):Result</code><br />
+        </dt>
+        <dd>
+            <p>
+                <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.tag("alaudaDevops/ruby:2.0", "yourproject/ruby:tip")</code></i>
+                <br />
+                Several operations: <code>exec</code>, <code>idle</code>, etc. have identical argument signatures and are
+                direct passthroughs to corresponding AlaudaDevops command-line-interface. Each parameter will be passed
+                verbatim to the command line utility.<br />
+                <b>Note:</b> The "import" verb is preceded by an underscore (i.e. alaudaDevops._import(...)) because "import" is a reserved word.
+            </p>
+            <ul>
+                <li>
+                    <b>args...</b> - A list of arguments which will be sent verbatim to the AlaudaDevops tool.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_delete">alaudaDevops.delete(obj Object, args...:String):Result</code><br />
+        </dt>
+        <dd>
+            <p>
+                <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.delete("configmap/foo", "configmap/bar")</code></i>
+            <ul>
+                <li>
+                    <b>args...</b> - A list of arguments which will be sent verbatim to the AlaudaDevops tool.
+                </li>
+            </ul>
+                <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.delete([ kind : "DeploymentConfig", metadata: [ ... ], ... ])</code></i>
+            <ul>
+                <li>
+                    <b>args...</b> - A Groovy Map with models enough of the object such that the AlaudaDevops command-line-interface can delete it.
+                </li>
+            </ul>
+                <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.delete("{ \"metadata\" : { ... } ... ")</code></i>
+            <ul>
+                <li>
+                    <b>args...</b> - JSON or YAML which represents enough of the object such that the AlaudaDevops command-line-interface can delete it.
+                </li>
+            </ul>
+                <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.delete([ objModel1, objModel1, ... ])</code></i>
+            <ul>
+                <li>
+                    <b>args...</b> - A List of Groovy Map objects which model enough of the object such that the AlaudaDevops command-line-interface can delete it.
+                </li>
+            </ul>
+                <br />
+                The <code>delete</code> operation is a bit of a combination of the passthrough commands noted above, where each
+                parameter will be passed verbatim to the command line utility, returning a result.  But it can also treat the first parameter as
+		a Groovy map, List of Groovy maps, or JSON/YAML string, similar to <code>alaudaDevops.create</code>, but the difference being
+		it does not return a StaticSelector.  It just returns the Result from the delete operation performed by the AlaudaDevops command-line-interface.<br />
+            </p>
+        </dd>
+        <dt>
+        <code id="alaudaDevops_logLevel">alaudaDevops.logLevel(level:Integer):void</code>
+      </dt>
+        <dd>
+            <p>
+                <b>Context:</b> Does not need to be contained within <a href="#alaudaDevops_withCluster"><code>alaudaDevops.withCluster</code></a>.
+                <br />
+                <br />
+                Sets the logging level for all AlaudaDevops operations subsequently executed. The
+                logging level is a global singleton and maintains its value until changed (i.e. it
+                is not affected by scopes like <a href="#alaudaDevops_withCluster"><code>alaudaDevops.withCluster</code></a>.
+                <br />
+                <br />
+                Setting a non-zero logging level increases the output sent to the Jenkins console by this plugin
+                and is also passed as the --loglevel argument to the underlying AlaudaDevops tool.
+            </p>
+            <ul>
+                <li>
+                    <b>level</b> - A value between 0 (disable logging) to 10 (maximum logging).
+                </li>
+            </ul>
+        </dd>
+        <dt>
+          <code id="alaudaDevops_verbose">alaudaDevops.verbose([enable:Boolean=true]):void</code>
+        </dt>
+        <dd>
+            <p>
+                <b>Context:</b> Does not need to be contained within <a href="#alaudaDevops_withCluster"><code>alaudaDevops.withCluster</code></a>.
+                <br />
+                <br />
+                Shorthand notation for <a href="#alaudaDevops_logLevel"><code>alaudaDevops.logLevel</code></a>.
+            </p>
+            <ul>
+                <li>
+                    <b>enable</b> - Defaults to true if not specified. If true, equivalent to
+                    <code>alaudaDevops.logLevel(8)</code>. If false, equivalent to <code>alaudaDevops.logLevel(0)</code>.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_raw">alaudaDevops.raw(args...:String):Result</code>
+        </dt>
+        <dd>
+            <p>
+                Allows caller to specify virtually any AlaudaDevops command to execute. Server, project, and token information
+                will be added automatically by the plugin if they are not specified by the caller.<br />
+                An exception will be thrown if the command does not return zero for an exit status. The
+                <a href="#Result">Result</a> object returned will make available the stdout and stderr for the operation.
+            </p>
+        </dd>
+    </dl>
+
+    <h2 id="Result">Return Type: Result</h2>
+    <p>
+        Many operations within the AlaudaDevops DSL return a <code>Result</code> object (a Selector is a
+        subclass of Result). A Result object details whether a given operation was successful
+        and any sub-actions that went into fulfilling the request.
+      </p>
+      <p  style="padding-left: 1em; color:#657383;">
+          <code>
+              // Delete all deployment configs<br />
+              def result = alaudaDevops.selector("dc").delete()<br />
+              <br />
+              // The name of the operation performed (i.e. "delete")<br />
+              echo "Overall status: $${result.operation}"  <br />
+              <br />
+              // The number of sub-actions run<br />
+              echo "Overall status: $${result.status}"  <br />
+              <br />
+              // First AlaudaDevops command which was executed<br />
+              echo "Actions performed: $${result.actions[0].cmd}" <br />
+              <br />
+              // Additional command reference information<br />
+              echo "Reference information: $${result.actions[0].reference}" <br />
+              <br />
+              // Aggregate output from all sub-actions<br />
+              echo "Operation output: $${result.out}" <br />
+          </code>
+      </p>
+      <p>
+          <b>Context:</b> Accesses to Result fields do not need to be contained within <a href="#alaudaDevops_withCluster"><code>alaudaDevops.withCluster</code></a>.
+          <br />
+          <br />
+          The Result is effectively a data structure with the following members:
+          <br />
+      </p>
+      <ul>
+          <li>
+              <code>Result.operation:String</code> - The high level operation that was performed. A high level
+              operation may be fulfilled by multiple underlying sub-actions.
+          </li>
+          <li>
+              <code>Result.out:String</code> - contains the aggregate stdout of the sub-actions
+              corresponding to an operation.
+          </li>
+          <li>
+              <code>Result.err:String</code> - contains the aggregate stderr of the sub-actions
+              corresponding to an operation.
+          </li>
+          <li>
+              <code>Result.status:int</code> - contains the aggregate (bitwise OR) status of the sub-actions
+              corresponding to an operation.
+          </li>
+          <li>
+              <code>Result.actions:List&lt;Action&gt;</code> - A list of zero or more actions which took place to
+              satisfy the operation. Each Action object contains the following fields.
+              <ul>
+                  <li>
+                      <code>Action.verb:String</code> - the AlaudaDevops tool verb executed.
+                  </li>
+                  <li>
+                      <code>Action.cmd:String</code> - the approximate AlaudaDevops command line executed (secrets redacted).
+                  </li>
+                  <li>
+                      <code>Action.out:String</code> - the stdout of the AlaudaDevops tool execution.
+                  </li>
+                  <li>
+                      <code>Action.err:String</code> - the stderr of the AlaudaDevops tool execution.
+                  </li>
+                  <li>
+                      <code>Action.status:int</code> - the exit code of the AlaudaDevops tool execution.
+                  </li>
+                  <li>
+                      <code>Action.reference:Map</code> - additional debug information in name/value pairs.
+                  </li>
+              </ul>
+          </li>
+      </ul>
+
+    <h2 id="Selector">Return Type: Selector (extends <a href="#Result">Result</a>)</h2>
+    <p>
+        Selectors identify a set of AlaudaDevops resources on which operations can be performed. Consider the
+        following example where a selector is created and used:
+    </p>
+    <p  style="margin-left: 1em; color:#657383;">
+        <code>
+            def dcSelector = alaudaDevops.selector("dc", [ app : "ruby" ])  // Selector created<br />
+            def result = dcSelector.describe()   // 'oc describe' run against the selector<br />
+            dcSelector.delete()  // 'oc delete' run against the same selector<br />
+        </code>
+    </p>
+    <p>
+        <b>Advanced:</b> <b><code id="StaticSelector">StaticSelector</code></b> and <b><code id="DynamicSelector">DynamicSelector</code></b> <br />
+        For many pipelines, it is unnecessary to understand the difference between
+        <code>StaticSelector</code> and <code>DynamicSelector</code>. In practice, the two subclasses
+        of Selector perform an identical set of operations on the resources they select; however, complex scenarios may
+        depend upon the differences in their behavior.
+        <br />
+    </p>
+    <ul>
+        <li>
+            A <code>StaticSelector</code> contains a fixed set of qualified object names and will only ever
+            operate on those named objects.
+        </li>
+        <li>
+            A <code>DynamicSelector</code> contains object criteria
+            (e.g. a kind and a set of labels) which will be evaluated whenever
+            an operation is performed using the selector. As such, the selector may select different
+            objects depending on the state of the sever.
+        </li>
+    </ul>
+    <p>
+        The <a href="#Selector_freeze"><code>Selector.freeze</code></a> API can be used to convert a
+        <code>DynamicSelector</code> into a <code>StaticSelector</code>. Consider the following example:
+    </p>
+    <p  style="margin-left: 1em; color:#657383;">
+        <code>
+            // Creates a dynamic selector<br />
+            def secretSelector = alaudaDevops.selector('secrets')<br />
+            <br />
+            // Creates a point-in-time, static list of Secret objects<br />
+            def staticSelector = secretSelector.freeze()<br />
+            <br />
+            // Create a new Secret<br />
+            alaudaDevops.create(...new secret named XYZ...)<br />
+            <br />
+            // List will contain XYZ<br />
+            echo "The DynamicSelector found objects: $${secretSelector.names()}"<br />
+            <br />
+            // List will not contain XYZ<br />
+            echo "The StaticSelector found objects: $${staticSelector.names()}"<br />
+        </code>
+    </p>
+    <dl>
+    <dt>
+        <code id="Selector_withEach">Selector.withEach {…}</code><br />
+    </dt>
+    <dd>
+        <p style="margin-left: 1em; color:#657383;">
+            Example:<br />
+            <code>
+                def list = alaudaDevops.newBuild("...").withEach {<br />
+                <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>// The variable 'it' is bound to a StaticSelector<br />
+                <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>// containing a single name for each iteration <br />
+                <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>echo "new-build created resource: $${it.name()}"<br />
+                }
+            </code>
+        </p>
+        <p>
+            Invokes the closure body once for each resource selected by the receiver. Before each iteration,
+            a new <code>StaticSelector</code> will be created which names on a single resource from the
+            selection.
+        </p>
+        </dd>
+        <dt>
+            <code id="Selector_narrow">Selector.narrow(kind:String):StaticSelector</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                Example:
+                <code>
+                    // Creates selector which operates only on the BuildConfig returned by newBuild<br />
+                    def bc = alaudaDevops.newBuild("...").narrow("bc")<br />
+                </code>
+            </p>
+            <p>
+                Creates a new Selector by filtering the objects selected by the receiver Selector based on Kind.
+            </p>
+            <ul>
+                <li>
+                    <b>kind</b> - The kind (e.g. "deploymentconfig", "bc", etc.).
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="Selector_union">Selector.union(sel:Selector):StaticSelector</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                Example: <code>def dcAndBC = alaudaDevops.selector("dc").union(alaudaDevops.selector('bc'))</code>
+            </p>
+            <p>
+                Creates a new Selector by adding the objects currently selected by the receiver and the objects
+                currently selected by the argument together. Note that even if both the receiver and the argument
+                are Dynamic Selectors, the result will be Static.
+            </p>
+            <ul>
+                <li>
+                    <b>sel</b> - A Selector with which to combine the receiver.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="Selector_related">Selector.related(kind:String):DynamicSelector</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                Example: <code>
+                            // Selector will find builds created by BuildConfig<br />
+                            def builds = alaudaDevops.newBuild("...").narrow("bc").related("builds")<br />
+                        </code>
+                Example: <code>
+                            // Selector will find pods created by DeploymentConfig<br />
+                            def pods = alaudaDevops.newApp("...").narrow("dc").related("pods")<br />
+                        </code>
+                Example: <code>
+                            // Selector will find DeploymentConfigs created by a Template<br />
+                            def dcs = alaudaDevops.selector("template/xyz").related("dc") <br />
+                        </code>
+            </p>
+            <p>
+                Creates a new Selector which finds objects of a specified kind which are related to the object
+                selected by the receiver. The receiver must only select a single object.<br />
+                This operation is knows how to find objects related to: DeploymentConfig, Template, and BuildConfig objects.
+                If any other kind is selected by the receiver, an error will be thrown.
+            </p>
+            <ul>
+                <li>
+                    <b>kind</b> - The kind to find (e.g. "pod", "build", etc.).
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="Selector_exists">Selector.exists():boolean</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">Example:
+                <code>
+                    // Returns a boolean whether the template "mongodb-ephemeral is present in the project.<br />
+                    def n = alaudaDevops.selector("template", "mongodb-ephemeral").exists() <br />
+                </code>
+            </p>
+            <p>
+                Returns true if a non-zero number of objects based on the selection criteria exits. In the case of a DynamicSelector,
+                a query is made to the server to establish existence. In the case of StaticSelectors,
+                the entire list of objects supplied in the creation of the selector must be present for a return value of "true" to occur.
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_count">Selector.count():Integer</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">Example:
+                  <code>
+                      // Returns the number of objects created by newBuild<br />
+                      def n = alaudaDevops.newBuild("...").count() <br />
+                  </code>
+              </p>
+              <p>
+                Returns the number of objects the receiver selects. For both DynamicSelectors and StaticSelectors,
+                a query is made to the server to establish the current count.
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_names">Selector.names():List&lt;String&gt;</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">Example:
+                <code>
+                    // Returns a list of qualified object names created by newBuild<br />
+                    def n = alaudaDevops.newBuild("...").names() <br />
+                </code>
+            </p>
+            <p>
+              Returns a list of names selected by the receiver (e.g. [ "pods/p1", "pods/p2" ]).
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_name">Selector.name():String</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">Example:
+                <code>
+                    // Return the qualified name of the buildconfig created<br />
+                    def n = alaudaDevops.newBuild("...").narrow("bc").name()<br />
+                </code>
+            </p>
+            <p>
+                Returns the name of the single object selected by the receiver (e.g. "bc/ruby"). This method should
+                only be used if the caller is certain the receiver only selects a single object. If multiple
+                objects are selected, an error is thrown.
+            </p>
+        </dd>
+
+        <dt>
+            <code id="Selector_objects">Selector.objects([mode:Map]):List&lt;Map&gt;</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                Example:<br />
+                <code>
+                    // Returns a list of Maps -- each modeling a selected object<br />
+                    def list = alaudaDevops.newBuild("...").objects() <br />
+                    for (obj in list) {<br />
+                    <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>echo "newBuild created object of type: $${obj.kind}"<br />
+                    }<br />
+                </code>
+                <code>
+                    // Returns a list of Maps -- each modeling an exportable object<br />
+                    def list = alaudaDevops.newBuild("...").objects(exportable:true) <br />
+                </code>
+            </p>
+            <p>
+                The <code>objects</code> method queries for the JSON definition of all objects selected by the
+                receiver and unmarshals that JSON into Groovy Maps. Those Maps are always returned in a list
+                (even if there are zero). The models are simple copies of the API server objects and modifications
+                are not reflected back to the server.
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_object">Selector.object([mode:Map]):Map</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                Example:<br />
+                <code>
+                    // Returns a model of the buildconfig created by newBuild<br />
+                    def obj = alaudaDevops.newBuild("...").narrow("bc").object() <br />
+                    echo "newBuild created buildconfig: $${obj.metadata.name}"<br />
+                </code>
+                <code>
+                    // Returns an exportable model of the buildconfig created by newBuild<br />
+                    def obj = alaudaDevops.newBuild("...").narrow("bc").object(exportable:true)<br />
+                </code>
+            </p>
+            <p>
+                The <code>object</code> method queries for the JSON definition of the singular object selected by the
+                receiver and unmarshals that JSON into a Groovy Map. The model is a simple copy of the API server
+                object and modifications are not reflected back to the server.<br />
+                This method should only be used if the caller is certain the receiver selects a single object. If multiple
+                objects are selected, an error is thrown.
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_asJson">Selector.asJson([mode:Map]):Map</code><br />
+        </dt>
+        <dd>
+            <p>
+                The <code>asJson</code> method returns a JSON string representation of the objects selected by the
+                receiver.
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_asYaml">Selector.asYaml([mode:Map]):Map</code><br />
+        </dt>
+        <dd>
+            <p>
+                The <code>asYaml</code> method returns a YAML string representation of the objects selected by the
+                receiver.
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_freeze">Selector.freeze():StaticSelector</code><br />
+        </dt>
+        <dd>
+            <p>
+                Populates and returns a new StaticSelector by querying for objects selected by the receiver. If executed on
+                a StaticSelector receiver, <code>freeze</code> simply returns a copy of the receiver.
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_logs">Selector.logs([args...:String]):Result</code><br />
+        </dt>
+        <dd>
+            <p>
+                Runs a logs operation against each object selected by the receiver. The logs will be captured in the
+                <code>Result</code> object and also streamed to the Jenkins console.
+            </p>
+            <ul>
+                <li>
+                    <b>args...</b> - An optional list of arguments which will be appended directly to the logs invocation.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="Selector_describe">Selector.describe([args...:String]):Result</code><br />
+        </dt>
+        <dd>
+            <p>
+                Runs a describe operation against each object selected by the receiver. The description will be captured in the
+                <code>Result</code> object and also streamed to the Jenkins console.
+            </p>
+            <ul>
+                <li>
+                    <b>args...</b> - An optional list of arguments which will be appended directly to the describe invocation.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="Selector_delete">Selector.delete([args...:String]):Result</code><br />
+        </dt>
+        <dd>
+            <p>
+              Deletes the objects selected by the receiver.
+            </p>
+            <ul>
+                <li>
+                    <b>args...</b> - An optional list of arguments which will be appended directly to the delete invocation.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="Selector_label">Selector.label(labels:Map, [args...:String]):Result</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                Example:<br />
+                <code>
+                    alaudaDevops.selector("pods").label([ k1:'v1', k2:'v2' ], "--overwrite")<br />
+                </code>
+            </p>
+            <p>
+                Adds the specified labels to the objects selected by the receiver.
+            </p>
+            <ul>
+                <li>
+                    <b>labels</b> - A map of labels to apply (e.g. [ label1 : 'value1', label2 : 'value2' ])
+                </li>
+                <li>
+                    <b>args...</b> - An optional list of arguments which will be appended directly to the label invocation.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <a name="Selector_annotate"/>
+            <code>Selector.annotate(annotations:Map, [args...:String]):Result</code><br />
+        </dt>
+        <dd>
+            <p>
+                <p style="margin-left: 1em; color:#657383;">
+                    Example:<br />
+                    <code>
+                        alaudaDevops.selector("pods").annotate([ k1:'v1', k2:'v2' ], "--overwrite")<br />
+                    </code>
+                </p>
+                <br />
+                Adds the specified annotations to the objects selected by the receiver.
+                <ul>
+                    <li>
+                        <b>annotations</b> - A map of annotations to apply (e.g. [ annotation1 : 'value1', annotation2 : 'value2' ])
+                    </li>
+                    <li>
+                        <b>args...</b> - An optional list of arguments which will be appended directly to the annotate invocation.
+                    </li>
+                </ul>
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_startBuild">Selector.startBuild([args...:String]):StaticSelector</code><br />
+        </dt>
+        <dd>
+            <p>
+                Executes start-build for each object selected by the receiver. Since this operation is only valid on BuildConfig
+                objects, <a href="#Selector_narrow"><code>Selector.narrow</code></a> should be used before this operation
+                if heterogeneous objects can be returned by the receiver. If non-BuildConfig objects are encountered,
+                the AlaudaDevops tool will return an error and the overall operation will fail.
+                <br />
+                The Selector returned identifies the objects created by the request.
+            </p>
+            <ul>
+                <li>
+                    <b>args...</b> - An optional list of arguments which will be appended directly to the
+                    start-build invocation. Any arguments will supplement the BuildConfig name which will be
+                    supplied automatically by the receiver.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="Selector_autoscale">Selector.autoscale([args...:String):Result // Use on DCs</code><br />
+            <code id="Selector_cancelBuild">Selector.cancelBuild([args...:String]):Result  // Use on BCs and Builds</code><br />
+            <code id="Selector_deploy">Selector.deploy([args...:String):Result // Use on DCs</code><br />
+            <code id="Selector_expose">Selector.expose([args...:String):Result // Use on Services</code><br />
+            <code id="Selector_scale">Selector.scale([args...:String):Result // Use on DCs and RCs</code><br />
+            <code id="Selector_volume">Selector.volume([args...:String):Result // Use on DCs</code><br />
+        </dt>
+        <dd>
+            <p>
+                This group of methods executes one action for each object selected by the receiver.
+                Some of these operations only work on a particular object Kind, so it may be necessary
+                to <a href="#Selector_narrow"><code>narrow</code></a> a Selector before calling one of these
+                methods.<br />
+                For example, <code>cancelBuild</code> will invoke oc cancel-build once for each object
+                selected by the receiver. It will report an error (causing an exception in the DSL) if
+                it executes against anything other than a BuildConfig or Build kind.<br />
+                The arguments specified for the method are passed through to each invocation of the
+                associated AlaudaDevops verb. The arguments should not contain the object's name since it
+                will be included automatically by the API prior to invoke the AlaudaDevops CLI tool.<br />
+                Each of these operations return a <a href="#Result"><code>Result</code></a> which can be
+                examined for information about stdout/stderr/exit status.
+            </p>
+            <ul>
+                <li>
+                    <b>args...</b> - An optional list of arguments which will be appended directly to the
+                    invocation.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="Selector_patch">Selector.patch(patch:String, [args...:String]):Result</code>
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+              <code>
+              def bcSelector = alaudaDevops.selector("bc", "example-buildconfig")<br />
+              bcSelector.patch('\'{"spec":{"source":{"git":{"ref": "development"}}}}\'')
+              </code>
+            </p>
+            <p>
+                Update field(s) of a resource using strategic merge patch, JSON and YAML formats are accepted.
+                The patch must be surrounded by escaped quotes, either single or double, depending on what type
+                of quotes you used to surround your field names and data.
+            </p>
+            <ul>
+                <li>
+                    <b>patch</b> - The patch to be applied to the resource JSON file, must be quoted.
+                </li>
+                <li>
+                    <b>args...</b> - Arguments that will be passed verbatim to the AlaudaDevops process facility.
+                </li>
+            </ul>
+        </dd>
+        <dt>
+            <code id="Selector_rollout">Selector.rollout():RolloutManager</code><br />
+        </dt>
+        <dd>
+            <p>
+                Returns a <a href="#RolloutManager"><code>RolloutManager</code></a> allowing the caller to perform
+                rollout-related operations on the objects selected by the receiver. If the receiver is a
+                <a href="#DynamicSelector"><code>DynamicSelector</code></a>, the RolloutManager will
+                perform a dynamic selection to satisfy each operation.
+                <br />
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_watch">Selector.watch {…}</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                Example:<br />
+                <code>
+                    // Create a new buildconfig<br />
+                    def nb = alaudaDevops.newBuild("https://github.com/alaudaDevops/ruby-hello-world", "--name=ruby") <br />
+                    def buildSelector = nb.narrow("bc").related("builds")<br />
+                    timeout(5) { // Throw exception after 5 minutes<br />
+                    <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>buildSelector.watch {<br />
+                    <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]><![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>return (it.count() > 0)
+                    <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>}<br />
+                    }<br />
+                    echo "Builds have been created: $${buildSelector.names()}"<br />
+                </code>
+            </p>
+            <p>
+                The <code>watch</code> method listens for any changes from the objects selected by the receiver.
+                The closure body will be executed at least once before any changes have been detected. Any
+                subsequent watch events will re-invoke the body. Within the body, the <code>it</code> variable
+                will be bound to the receiver <code>Selector</code>.<br />
+                The watch body must return a boolean: <code>true</code> to exit the watch or <code>false</code>
+                to continue it. <br/>
+                If the closure body throws an exception, the watch will terminate and the exception will be propagated.<br />
+                The author is encouraged to wrap this operation in a pipeline <code>timeout</code> step since there is no
+                guarantee the body will be executed again after the first invocation.<br />
+                If the API server gracefully disconnects the watch connection (e.g. due to watch inactivity),
+                the step will automatically and transparently reestablish the watch and re-invoke the body
+                in case changes took place during the disconnected interval.
+            </p>
+        </dd>
+        <dt>
+            <code id="Selector_untilEach">Selector.untilEach([minimumCount:Integer=1) {…}</code><br />
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                Example:<br />
+                <code>
+                    // Create a new buildconfig
+                    def nb = alaudaDevops.newBuild("https://github.com/alaudaDevops/ruby-hello-world", "--name=ruby") <br />
+                    def buildSelector = nb.narrow("bc").related("builds")<br />
+                    timeout(5) { // Throw exception after 5 minutes<br />
+                    <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>buildSelector.untilEach(1) {<br />
+                    <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]><![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>return (it.object().status.phase == "Complete")<br />
+                    <![CDATA[&nbsp;&nbsp;&nbsp;&nbsp;]]>}<br />
+                    }<br />
+                    echo "Builds have been completed: $${buildSelector.names()}"<br />
+                </code>
+            </p>
+            <p>
+                The <code>untilEach</code> provides a simple interface to ensure that all objects selected by
+                a receiver meet a user defined condition.<br />
+                Like <code>watch</code>, <code>untilEach</code> listens for any changes from the objects
+                selected by the receiver. When the number of objects is greater-than or equal to the
+                minimumCount parameter (defaults to 1), the body will be executed for each object.<br />
+                The <code>it</code> variable will be bound to a <code>Selector</code> for the single object to analyze
+                with the body invocation. If the selected object satisfies the user's condition, the body should
+                return true; if it does not, the body should return false.<br />
+                If the closure body throws an exception, <code>untilEach</code> will terminate and the exception will be propagated.<br />
+                Unless an exception is thrown by the closure, <code>untilEach</code> will not terminate
+                until the number of objects selected by the receiver is greater-than or equal to the minimumCount
+                and the closure body returns true for each selected object.
+            </p>
+        </dd>
+    </dl>
+
+    <h2 id="RolloutManager">Return Type: RolloutManager</h2>
+    <p>
+        A <code>RolloutManager</code> object exposes methods which will run rollout related operations
+        against a set of selected resources. A RolloutManager is created using
+        <a href="#Selector_rollout"><code>Selector.rollout</code></a> . Before acquiring a <code>RolloutManager</code>,
+        callers should ensure their <code>Selector</code> contains only appropriate resources (i.e. DeploymentConfigs).
+    </p>
+    <p  style="margin-left: 1em; color:#657383;">
+        <code>
+            def dcSelector = alaudaDevops.selector("dc", [ app : "ruby" ])  // Selector created<br />
+            // Create a RolloutManager which will act on all objects selected by the receiver<br />
+            def rm = dcSelector.rollout()   <br />
+            def result = rm.history() // Gather history for the selected rollouts<br />
+            echo "DeploymentConfig history:\n$${result.out}"<br />
+            rm.pause() // Pause the selected rollouts<br />
+        </code>
+    </p>
+    <dl>
+        <dt>
+            <code id="RolloutManager_history">RolloutManager.history([args...:String]):Result</code><br />
+            <code id="RolloutManager_latest">RolloutManager.latest([args...:String]):Result</code><br />
+            <code id="RolloutManager_pause">RolloutManager.pause([args...:String]):Result</code><br />
+            <code id="RolloutManager_resume">RolloutManager.resume([args...:String]):Result</code><br />
+            <code id="RolloutManager_retry">RolloutManager.retry([args...:String]):Result</code><br />
+            <code id="RolloutManager_status">RolloutManager.status([args...:String]):Result</code><br />
+            <code id="RolloutManager_undo">RolloutManager.undo([args...:String]):Result</code><br />
+        </dt>
+        <dd>
+            <p>
+                <i style="margin-left: 1em; color:#657383;">Example: <code>alaudaDevops.selector("dc/nginx").rollout().undo("--to-revision=3")</code></i>
+                <br />
+                Several <code>RolloutManager</code> operations: <code>history</code>, <code>latest</code>, etc. have identical argument signatures and are
+                direct passthroughs to corresponding AlaudaDevops command-line-interface. Each parameter will be passed
+                verbatim to the command line utility.<br />
+            </p>
+            <ul>
+                <li>
+                    <b>args...</b> - A list of arguments which will be sent verbatim to the AlaudaDevops tool.
+                </li>
+            </ul>
+        </dd>
+    </dl>
+</div>
+
+</j:jelly>
