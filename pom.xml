@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>com.alauda.jenkins.plugins</groupId>
-    <artifactId>alaudaDevops-client</artifactId>
+    <artifactId>alauda-devops-pipeline</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
