@@ -28,9 +28,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 
-public class OcAction extends AbstractStepImpl {
+public class AcpAction extends AbstractStepImpl {
 
-    public static final String FUNCTION_NAME = "_OcAction";
+    public static final String FUNCTION_NAME = "_AcpAction";
 
     private final ClientCommandBuilder cmdBuilder;
     private final boolean verbose;
@@ -38,10 +38,10 @@ public class OcAction extends AbstractStepImpl {
     private final HashMap<String, String> reference;
 
     @DataBoundConstructor
-    public OcAction(String server, String project, boolean skipTLSVerify, String caPath,
-            String verb, List advArgs, List verbArgs, List userArgs, List options, String token,
-            String streamStdOutToConsolePrefix,
-            HashMap<String, String> reference, int logLevel) {
+    public AcpAction(String server, String project, boolean skipTLSVerify, String caPath,
+                     String verb, List advArgs, List verbArgs, List userArgs, List options, String token,
+                     String streamStdOutToConsolePrefix,
+                     HashMap<String, String> reference, int logLevel) {
         this.cmdBuilder = new ClientCommandBuilder(server, project, skipTLSVerify, caPath,
                 verb, advArgs, verbArgs, userArgs, options, token, logLevel);
         this.verbose = (logLevel > 0);
@@ -78,7 +78,7 @@ public class OcAction extends AbstractStepImpl {
         return -1;
     }
 
-    public static class OcActionResult implements Serializable {
+    public static class AcpActionResult implements Serializable {
 
         @Whitelisted
         public String verb;
@@ -135,7 +135,7 @@ public class OcAction extends AbstractStepImpl {
 
         @Override
         public String getDisplayName() {
-            return "Internal utility function for Devops DSL";
+            return "Internal utility function for DevOps DSL";
         }
 
         /**
@@ -151,12 +151,12 @@ public class OcAction extends AbstractStepImpl {
     }
 
     public static class Execution extends
-            AbstractSynchronousNonBlockingStepExecution<OcActionResult> {
+            AbstractSynchronousNonBlockingStepExecution<AcpActionResult> {
 
         private static final long serialVersionUID = 1L;
 
         @Inject
-        private transient OcAction step;
+        private transient AcpAction step;
 
         @StepContextParameter
         private transient TaskListener listener;
@@ -186,7 +186,7 @@ public class OcAction extends AbstractStepImpl {
         }
 
         @Override
-        protected OcActionResult run() throws Exception {
+        protected AcpActionResult run() throws Exception {
 
             String commandString = step.cmdBuilder.asString(false);
             String redactedCommandString = step.cmdBuilder.asString(true);
@@ -219,7 +219,7 @@ public class OcAction extends AbstractStepImpl {
 
                 // Without this intervention, Durable task logs some extraneous
                 // details I don't want appearing in the console
-                // e.g. "[_OcAction] Running shell script"
+                // e.g. "[_AcpAction] Running shell script"
                 QuietTaskListenerFactory.QuietTasklistener quiet = QuietTaskListenerFactory
                         .build(listener);
                 Controller dtc = task
@@ -270,7 +270,7 @@ public class OcAction extends AbstractStepImpl {
                     stdErr.write(IOUtils.toByteArray(is));
                 }
 
-                OcActionResult result = new OcActionResult();
+                AcpActionResult result = new AcpActionResult();
                 result.verb = step.cmdBuilder.verb;
                 result.cmd = redactedCommandString;
                 result.status = exitStatus.intValue();

@@ -20,11 +20,11 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static com.alauda.jenkins.plugins.pipeline.OcAction.exitStatusRaceConditionBugWorkaround;
+import static com.alauda.jenkins.plugins.pipeline.AcpAction.exitStatusRaceConditionBugWorkaround;
 
-public class OcWatch extends AbstractStepImpl {
+public class AcpWatch extends AbstractStepImpl {
 
-    private static Logger LOGGER = Logger.getLogger(OcWatch.class.getName());
+    private static Logger LOGGER = Logger.getLogger(AcpWatch.class.getName());
 
     public static final String FUNCTION_NAME = "_OcWatch";
 
@@ -33,9 +33,9 @@ public class OcWatch extends AbstractStepImpl {
     private final int watchLoglevel;
 
     @DataBoundConstructor
-    public OcWatch(String server, String project, boolean skipTLSVerify, String caPath, String verb, List advArgs, List verbArgs,
-                   List userArgs, List options, String token,
-                   int logLevel) {
+    public AcpWatch(String server, String project, boolean skipTLSVerify, String caPath, String verb, List advArgs, List verbArgs,
+                    List userArgs, List options, String token,
+                    int logLevel) {
         this.watchLoglevel = logLevel;
         this.cmdBuilder = new ClientCommandBuilder(server, project, skipTLSVerify, caPath, verb,
                 advArgs, verbArgs, userArgs, options, token, logLevel);
@@ -81,7 +81,7 @@ public class OcWatch extends AbstractStepImpl {
         private static final long serialVersionUID = 1;
 
         @Inject
-        private transient OcWatch step;
+        private transient AcpWatch step;
 
         @StepContextParameter
         private transient FilePath filePath;

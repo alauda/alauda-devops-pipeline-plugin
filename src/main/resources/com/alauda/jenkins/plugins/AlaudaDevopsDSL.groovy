@@ -2,7 +2,7 @@ package com.alauda.jenkins.plugins
 
 import com.cloudbees.groovy.cps.NonCPS
 import com.cloudbees.plugins.credentials.CredentialsProvider
-import com.alauda.jenkins.plugins.pipeline.OcAction
+import com.alauda.jenkins.plugins.pipeline.AcpAction
 import com.alauda.jenkins.plugins.pipeline.OcContextInit
 
 import groovy.json.JsonOutput
@@ -56,7 +56,7 @@ class AlaudaDevopsDSL implements Serializable {
             caps = new Capabilities()
             ArrayList<String> g = new ArrayList<String>();
             g.add("get");
-            OcAction.OcActionResult versionCheck = (OcAction.OcActionResult) script._OcAction(buildCommonArgs("help", g, null, null));
+            AcpAction.AcpActionResult versionCheck = (AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("help", g, null, null));
             LOGGER.log(Level.FINE, "getCapabilities return from kubectl help get " + versionCheck.out);
             caps.ignoreNotFound = versionCheck.out.contains("--ignore-not-found")
             nodeCapabilities.put(key, caps)
@@ -409,7 +409,7 @@ class AlaudaDevopsDSL implements Serializable {
 
         ArrayList<String> userArgsList = (userArgsArray == null) ? new ArrayList<String>() : Arrays.asList(userArgsArray);
 
-        // These arguments will be mapped, by name, to the constructor parameters of OcAction
+        // These arguments will be mapped, by name, to the constructor parameters of AcpAction
         Map args = [
                 server       : currentContext.getServerUrl(),
                 project      : (getProject ? currentContext.getProject() : null),
@@ -638,7 +638,7 @@ class AlaudaDevopsDSL implements Serializable {
             if (project != null) {
                 stepArgs["project"] = project;
             }
-            r.actions.add((OcAction.OcActionResult) script._OcAction(stepArgs));
+            r.actions.add((AcpAction.AcpActionResult) script._AcpAction(stepArgs));
         } else if (markup) {
             FilePath f = currentContext.exec.getWorkspaceFilePath().createTextTempFile(verb, ".markup", s, false);
             try {
@@ -648,7 +648,7 @@ class AlaudaDevopsDSL implements Serializable {
                 if (project != null) {
                     stepArgs["project"] = project;
                 }
-                r.actions.add((OcAction.OcActionResult) script._OcAction(stepArgs));
+                r.actions.add((AcpAction.AcpActionResult) script._AcpAction(stepArgs));
             } finally {
                 f.delete();
             }
@@ -658,7 +658,7 @@ class AlaudaDevopsDSL implements Serializable {
             if (project != null) {
                 stepArgs["project"] = project;
             }
-            r.actions.add((OcAction.OcActionResult) script._OcAction(stepArgs));
+            r.actions.add((AcpAction.AcpActionResult) script._AcpAction(stepArgs));
         }
 
         return r;
@@ -696,19 +696,19 @@ class AlaudaDevopsDSL implements Serializable {
         Result r = new Result("process")
 
         if (httpref) {
-            r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs("process", ["-f", s], args, "-o=json")));
+            r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("process", ["-f", s], args, "-o=json")));
             r.failIf("process returned an error");
         } else if (markup) { // does this look like json or yaml?
             FilePath f = currentContext.exec.getWorkspaceFilePath().createTextTempFile("process", ".markup", s, false);
             try {
-                r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs("process", ["-f", f.getRemote()], args, "-o=json")));
+                r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("process", ["-f", f.getRemote()], args, "-o=json")));
                 r.failIf("process returned an error");
             } finally {
                 f.delete();
             }
         } else {
             // Otherwise, the obj parameter is assumed to be a template name
-            r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs("process", [s], args, "-o=json")));
+            r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("process", [s], args, "-o=json")));
             r.failIf("process returned an error");
         }
         // Output should be JSON; unmarshall into a map and transform into a list of objects.
@@ -729,19 +729,19 @@ class AlaudaDevopsDSL implements Serializable {
         Result r = new Result("patch")
 
         if (httpref) {
-            r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs("patch", ["-f", s, "-p", patch], args)));
+            r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("patch", ["-f", s, "-p", patch], args)));
             r.failIf("patch returned an error");
         } else if (markup) { // does this look like json or yaml?
             FilePath f = currentContext.exec.getWorkspaceFilePath().createTextTempFile("patch", ".markup", s, false);
             try {
-                r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs("patch", ["-f", f.getRemote(), "-p", patch], args)));
+                r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("patch", ["-f", f.getRemote(), "-p", patch], args)));
                 r.failIf("patch returned an error");
             } finally {
                 f.delete();
             }
         } else {
             // Otherwise, the obj parameter is assumed to be a template name
-            r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs("patch", [s, "-p", patch], args)));
+            r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("patch", [s, "-p", patch], args)));
             r.failIf("patch returned an error");
         }
         return r;
@@ -751,7 +751,7 @@ class AlaudaDevopsDSL implements Serializable {
         String name = toSingleString(oname);
         String[] args = toStringArray(oargs);
         Result r = new Result("newProject");
-        r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs(false, "new-project", [name], args, "--skip-config-write")));
+        r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs(false, "new-project", [name], args, "--skip-config-write")));
         r.failIf("new-project returned an error");
         return r;
     }
@@ -809,7 +809,7 @@ class AlaudaDevopsDSL implements Serializable {
     public Result raw(Object... oargs) {
         String[] args = toStringArray(oargs);
         Result r = new Result("raw");
-        r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs("", null, args)));
+        r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("", null, args)));
         r.failIf("raw command " + args + " returned an error");
         return r;
     }
@@ -824,7 +824,7 @@ class AlaudaDevopsDSL implements Serializable {
     public Result set(Object... oargs) {
         String[] args = toStringArray(oargs);
         Result r = new Result("set");
-        r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs("set", null, args)));
+        r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("set", null, args)));
         r.failIf("set returned an error");
         return r;
     }
@@ -836,7 +836,7 @@ class AlaudaDevopsDSL implements Serializable {
         // 
         // so we re-run with create on the returned json to effect the actual creation
         Result r = new Result("newApp");
-        r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs("new-app", null, args, "-o=json")));
+        r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("new-app", null, args, "-o=json")));
         r.failIf("new-app" + " returned an error");
         ArrayList<HashMap> result = unwrapAlaudaDevopsList(serializableMap(r.out));
         return objectDefAction("create", result, new Object[0]);
@@ -845,7 +845,7 @@ class AlaudaDevopsDSL implements Serializable {
     private AlaudaDevopsResourceSelector newObjectsAction(String operation, String verb, Object[] oargs) {
         String[] args = toStringArray(oargs);
         Result r = new Result(operation);
-        r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs(verb, null, args, "-o=name")));
+        r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs(verb, null, args, "-o=name")));
         r.failIf(verb + " returned an error");
         AlaudaDevopsResourceSelector selector = new AlaudaDevopsResourceSelector(r, AlaudaDevopsDSL.splitNames(r.out));
         return selector;
@@ -866,7 +866,7 @@ class AlaudaDevopsDSL implements Serializable {
     private Result simplePassthrough(String verb, Object[] oargs) {
         String[] args = toStringArray(oargs);
         Result r = new Result(verb);
-        r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs(verb, null, args, null)));
+        r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs(verb, null, args, null)));
         r.failIf(verb + " returned an error");
         return r;
     }
@@ -891,14 +891,14 @@ class AlaudaDevopsDSL implements Serializable {
 
     public static class Result implements Serializable {
 
-        public final ArrayList<OcAction.OcActionResult> actions = new ArrayList<OcAction.OcActionResult>();
+        public final ArrayList<AcpAction.AcpActionResult> actions = new ArrayList<AcpAction.AcpActionResult>();
         public final String highLevelOperation;
 
         public Result(String highLevelOperation) {
             this.highLevelOperation = highLevelOperation;
         }
 
-        public Result(String highLevelOperation, ArrayList<OcAction.OcActionResult> actions) {
+        public Result(String highLevelOperation, ArrayList<AcpAction.AcpActionResult> actions) {
             this.highLevelOperation = highLevelOperation;
             this.actions = actions;
         }
@@ -918,7 +918,7 @@ class AlaudaDevopsDSL implements Serializable {
         protected failIf(String failMessage) throws AbortException {
             if (getStatus() != 0) {
                 StringBuffer sb = new StringBuffer(failMessage + ";\n");
-                for (OcAction.OcActionResult actionResult : actions) {
+                for (AcpAction.AcpActionResult actionResult : actions) {
                     if (actionResult.isFailed()) {
                         sb.append(actionResult.toString());
                         sb.append("\n");
@@ -940,7 +940,7 @@ class AlaudaDevopsDSL implements Serializable {
             m.put("status", getStatus());
             ArrayList actionList = new ArrayList();
             m.put("actions", actionList);
-            for (OcAction.OcActionResult e : actions) {
+            for (AcpAction.AcpActionResult e : actions) {
                 actionList.add(e.toMap());
             }
             String json = JsonOutput.prettyPrint(JsonOutput.toJson(m));
@@ -950,7 +950,7 @@ class AlaudaDevopsDSL implements Serializable {
         @NonCPS
         public String getOut() {
             StringBuilder sb = new StringBuilder();
-            for (OcAction.OcActionResult o : actions) {
+            for (AcpAction.AcpActionResult o : actions) {
                 String s = o.out
                 if (s == null) {
                     continue;
@@ -966,7 +966,7 @@ class AlaudaDevopsDSL implements Serializable {
         @NonCPS
         public String getErr() {
             StringBuilder sb = new StringBuilder();
-            for (OcAction.OcActionResult o : actions) {
+            for (AcpAction.AcpActionResult o : actions) {
                 String s = o.err
                 if (s == null) {
                     continue;
@@ -982,7 +982,7 @@ class AlaudaDevopsDSL implements Serializable {
         @NonCPS
         public int getStatus() {
             int status = 0;
-            for (OcAction.OcActionResult o : actions) {
+            for (AcpAction.AcpActionResult o : actions) {
                 status |= o.status
             }
             return status;
@@ -1136,14 +1136,14 @@ class AlaudaDevopsDSL implements Serializable {
             }
 
             r.actions.add(
-                    (OcAction.OcActionResult) script._OcAction(buildCommonArgs("delete", selectionArgs, userArgs))
+                    (AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("delete", selectionArgs, userArgs))
             );
             r.failIf("Error during delete");
             return r;
         }
 
         /**
-         * If an OcAction is performed for an empty static, no object criteria will be
+         * If an AcpAction is performed for an empty static, no object criteria will be
          * added to the command line and oc will report an error. Instead, many operations
          * should just short circuit and not execute oc.
          * @return Detects whether an operation is being performed on an empty selector.
@@ -1166,7 +1166,7 @@ class AlaudaDevopsDSL implements Serializable {
             }
 
             r.actions.add(
-                    (OcAction.OcActionResult) script._OcAction(buildCommonArgs(action, verbArgs, userArgs))
+                    (AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs(action, verbArgs, userArgs))
             );
             r.failIf("Error during " + action);
             return r;
@@ -1195,7 +1195,7 @@ class AlaudaDevopsDSL implements Serializable {
             Map args = buildCommonArgs("describe", selectionArgs(), userArgs);
             args.put("streamStdOutToConsolePrefix", "describe");
             r.actions.add(
-                    (OcAction.OcActionResult) script._OcAction(args)
+                    (AcpAction.AcpActionResult) script._AcpAction(args)
             );
             r.failIf("Error during describe");
             return r;
@@ -1275,14 +1275,14 @@ class AlaudaDevopsDSL implements Serializable {
 
             String verb = exportable ? "export" : "get"
             if (projectList == null || projectList.size() == 0) {
-                OcAction.OcActionResult r = (OcAction.OcActionResult) script._OcAction(buildCommonArgs(verb, selectionArgs(), null, "-o=" + markupType));
+                AcpAction.AcpActionResult r = (AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs(verb, selectionArgs(), null, "-o=" + markupType));
                 r.failIf("Unable to retrieve object markup with " + verb);
                 return r.out;
             }
             if (objectList == null) {
                 Map stepArgs = buildCommonArgs(verb, selectionArgs(), null, "-o=" + markupType);
                 stepArgs["project"] = currentContext.getProject();
-                OcAction.OcActionResult r = (OcAction.OcActionResult) script._OcAction(stepArgs);
+                AcpAction.AcpActionResult r = (AcpAction.AcpActionResult) script._AcpAction(stepArgs);
                 r.failIf("Unable to retrieve object markup with " + verb);
                 return r.out;
             }
@@ -1302,7 +1302,7 @@ class AlaudaDevopsDSL implements Serializable {
                 if (project == null)
                     project = currentContext.getProject();
                 stepArgs["project"] = project;
-                OcAction.OcActionResult r = (OcAction.OcActionResult) script._OcAction(stepArgs);
+                AcpAction.AcpActionResult r = (AcpAction.AcpActionResult) script._AcpAction(stepArgs);
                 r.failIf("Unable to retrieve object markup with " + verb);
                 result.actions.add(r);
             }
@@ -1366,12 +1366,12 @@ class AlaudaDevopsDSL implements Serializable {
             }
 
             // Otherwise, we need to ask the API server what presently matches
-            OcAction.OcActionResult r = null;
+            AcpAction.AcpActionResult r = null;
             if (script.alaudaDevops.getCapabilities().hasIgnoredNotFound()) {
-                r = (OcAction.OcActionResult) script._OcAction(buildCommonArgs("get", selectionArgs(), null, "-o=name", "--ignore-not-found"));
+                r = (AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("get", selectionArgs(), null, "-o=name", "--ignore-not-found"));
                 r.failIf("Unable to retrieve object names: " + this.toString());
             } else {
-                r = (OcAction.OcActionResult) script._OcAction(buildCommonArgs("get", selectionArgs(), null, "-o=name"));
+                r = (AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("get", selectionArgs(), null, "-o=name"));
                 if (r.status != 0 && r.err.contains("(NotFound)")) {
                     return new ArrayList<String>();
                 } else {
@@ -1410,7 +1410,7 @@ class AlaudaDevopsDSL implements Serializable {
                 Map args = buildCommonArgs("logs", [name], userArgs);
                 args.put("streamStdOutToConsolePrefix", "logs:" + name);
                 r.actions.add(
-                        (OcAction.OcActionResult) script._OcAction(args)
+                        (AcpAction.AcpActionResult) script._AcpAction(args)
                 );
             }
             r.failIf("Error running logs on at least one item: " + names.toString());
@@ -1431,7 +1431,7 @@ class AlaudaDevopsDSL implements Serializable {
                     args.put("streamStdOutToConsolePrefix", "start-build:" + name);
                 }
                 r.actions.add(
-                        (OcAction.OcActionResult) script._OcAction(args)
+                        (AcpAction.AcpActionResult) script._AcpAction(args)
                 );
             }
             r.failIf("Error running start-build on at least one item: " + names.toString());
@@ -1454,7 +1454,7 @@ class AlaudaDevopsDSL implements Serializable {
             List<String> names = names();
             for (String name : names) {
                 r.actions.add(
-                        (OcAction.OcActionResult) script._OcAction(buildCommonArgs(verb, [name.toString()], userArgs))
+                        (AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs(verb, [name.toString()], userArgs))
                 );
             }
             r.failIf("Error running " + verb + " on at least one item: " + names.toString());
@@ -1492,7 +1492,7 @@ class AlaudaDevopsDSL implements Serializable {
             Result r = new Result("patch")
             List<String> names = names();
             for (String name : names) {
-                r.actions.add((OcAction.OcActionResult) script._OcAction(buildCommonArgs("patch", [name, "-p", patch], userArgs)));
+                r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("patch", [name, "-p", patch], userArgs)));
             }
             r.failIf("Error running patch on at least one item: " + names.toString());
             return r;
@@ -1658,7 +1658,7 @@ class AlaudaDevopsDSL implements Serializable {
                 List verbArgs = [subVerb, dcName];
                 Map stepArgs = buildCommonArgs("rollout", verbArgs, args, null);
                 stepArgs.streamStdOutToConsolePrefix = "rollout:" + subVerb + ":" + dcName;
-                r.actions.add((OcAction.OcActionResult) script._OcAction(stepArgs));
+                r.actions.add((AcpAction.AcpActionResult) script._AcpAction(stepArgs));
             }
             r.failIf(r.highLevelOperation + " returned an error");
             return r;
