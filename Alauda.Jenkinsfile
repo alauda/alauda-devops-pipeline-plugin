@@ -203,7 +203,7 @@ pipeline {
 			script { echo "damn!" // deploy.notificationFailed(DEPLOYMENT, DINGDING_BOT, "流水线失败了", RELEASE_BUILD)
 			}
 		}
-		always { junit "**/target/surefire-reports/**/*.xml" }
+		always { junit allowEmptyResults: true, testResults: "**/target/surefire-reports/**/*.xml" }
 	}
 }
 
