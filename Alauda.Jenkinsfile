@@ -97,7 +97,7 @@ pipeline {
 							}
 
 							sh """
-                        mvn clean install -U findbugs:findbugs
+                        mvn clean install -U -DskipTests
 
                         if [ -d .tmp ]; then
                           rm -rf .tmp
