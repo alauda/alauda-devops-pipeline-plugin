@@ -156,14 +156,14 @@ pipeline {
 						sh "git fetch --tags ${repo}" // retrieve all tags
 						sh("git tag -a ${RELEASE_BUILD} -m 'auto add release tag by jenkins'")
 						sh("git push ${repo} --tags")
-					}
 
-          try{
-					  sh 'mvn -Darguments="-DskipTests" release:prepare -B'
+            try{
+              sh 'mvn -Darguments="-DskipTests" release:prepare -B'
 
-					  sh 'mvn -Darguments="-DskipTests" release:perform'
-					}catch(e){
-					  sh 'mvn release:rollback'
+              sh 'mvn -Darguments="-DskipTests" release:perform'
+            }catch(e){
+              sh 'mvn release:rollback'
+            }
 					}
 				}
 			}
