@@ -157,6 +157,14 @@ pipeline {
 						sh("git tag -a ${RELEASE_BUILD} -m 'auto add release tag by jenkins'")
 						sh("git push ${repo} --tags")
 					}
+
+          try{
+					  sh 'mvn -Darguments="-DskipTests" release:prepare -B'
+
+					  sh 'mvn -Darguments="-DskipTests" release:perform'
+					}catch(e){
+					  sh 'mvn release:rollback'
+					}
 				}
 			}
 		}
