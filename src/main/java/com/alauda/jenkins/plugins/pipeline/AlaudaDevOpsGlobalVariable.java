@@ -13,7 +13,7 @@ import javax.annotation.Nonnull;
  * resources/com/alauda/jenkins/plugins/AlaudaDevopsGlobalVariable.groovy
  */
 @Extension
-public class AlaudaDevopsGlobalVariable extends GlobalVariable {
+public class AlaudaDevOpsGlobalVariable extends GlobalVariable {
 
     @Nonnull
     @Override
