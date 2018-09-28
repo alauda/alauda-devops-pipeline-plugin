@@ -97,7 +97,7 @@ pipeline {
 							}
 
 							sh """
-                        mvn clean install -U -DskipTests
+                        mvn clean install -U
 
                         if [ -d .tmp ]; then
                           rm -rf .tmp
