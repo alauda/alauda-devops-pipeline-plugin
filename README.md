@@ -1,9 +1,9 @@
 
 # Alauda Jenkins Pipeline (DSL) Plugin
 
-<!-- Install doctoc with `npm install -g doctoc`  then `doctoc README.md --github` -->
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<!-- Install doctkubectl with `npm install -g doctoc`  then `doctkubectl README.md --github` -->
+<!-- START doctkubectl generated Tkubectl please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctkubectl TO UPDATE -->
 
 
 - [Overview](#overview)
@@ -34,7 +34,7 @@
   - [Understanding the implications of the KUBECONFIG environment variable or presence of `.kube/config` in the home directory of the user running Jenkins](#understanding-the-implications-of-the-kubeconfig-environment-variable-or-presence-of-kubeconfig-in-the-home-directory-of-the-user-running-jenkins)
 - [You call this documentation?!](#you-call-this-documentation)
 
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<!-- END doctkubectl generated Tkubectl please keep comment here to allow auto update -->
 
 ## Overview
 The [Alauda](https://www.alauda.io) [Pipeline](https://jenkins.io/solutions/pipeline/)
@@ -57,27 +57,26 @@ since pipeline scripts are written using Groovy (Note: Jenkins sandboxes and [in
 with the use of some Groovy facilities).
 
 ## Installing and developing
-This plugin is available at the [Jenkins Update Center](https://updates.jenkins-ci.org/download/plugins/alaudaDevops-client/) and is included
-in the [Alauda Jenkins image.](https://github.com/alaudaDevops/jenkins)
+This plugin is available at the [Jenkins Update Center](https://updates.jenkins-ci.org/download/plugins/alauda-devops-pipeline/).
 
 Otherwise, if you are interested in building this plugin locally, follow these steps:
 
 1. Install maven (platform specific)
 2. Clone this git repository:
     ```
-    git clone git@bitbucket.org:mathildetech/jenkins-client-plugin.git
+    git clone git@github.com:alauda/alauda-devops-pipeline-plugin.git
     ```
 3. In the root of the local repository, run maven
     ```
-    cd jenkins-client-plugin
+    cd alauda-devops-pipeline-plugin
     mvn clean package
     ```
-4. Maven will build target/alaudaDevops-client.hpi  (the Jenkins plugin binary)
+4. Maven will build target/alauda-devops-pipeline.hpi  (the Jenkins plugin binary)
 5. Open Jenkins in your browser, and navigate (as an administrator):
   1. Manage Jenkins > Manage Plugins.
   2. Select the "Advanced" Tab.
   3. Find the "Upload Plugin" HTML form and click "Browse".
-  4. Find the alaudaDevops-client.hpi built in the previous steps.
+  4. Find the alauda-devops-pipeline.hpi built in the previous steps.
   5. Submit the file.
   6. Check that Jenkins should be restarted.
 
@@ -107,7 +106,7 @@ pipeline {
 
 directive must be the outer most closure to fully enable all the declarative pipeline semantics and features.
 
-2. Declarative currently does not support groovy body/closures that are not pipeline script steps.  And since 
+2. Declarative currently does not support groovy body/closures that are not pipeline script steps. And since 
 this plugin integrates into Jenkins as a Global Variable, it does not meet that restriction.  As such, you must 
 encapsulate all use of this plugin with the declarative
 
@@ -126,7 +125,7 @@ are still valid, and if not, either adjust recommendations accordingly, or lever
 with declarative that are synergistic with this plugin's design.  
 
 But certainly if users of this plugin notice changes before the maintainers of the plugin, please advise via opening issues at 
-https://github.com/alaudaDevops/jenkins-client-plugin.
+https://github.com/alauda/alauda-devops-pipeline-plugin/issues.
 
 
 ## Examples
@@ -195,7 +194,7 @@ alaudaDevops.withCluster( 'mycluster' ) {
     // Create a Selector capable of selecting all service accounts in mycluster's default project
     def saSelector = alaudaDevops.selector( 'serviceaccount' )
 
-    // Prints `oc describe serviceaccount` to Jenkins console
+    // Prints `kubectl describe serviceaccount` to Jenkins console
     saSelector.describe()
 
     // Selectors also allow you to easily iterate through all objects they currently select.
@@ -226,7 +225,7 @@ that new Selectors are regularly returned by DSL operations.
 
 ```groovy
 alaudaDevops.withCluster( 'mycluster' ) {
-    // Run `oc new-app https://github.com/alaudaDevops/ruby-hello-world` . It
+    // Run `kubectl new-app https://github.com/alaudaDevops/ruby-hello-world` . It
     // returns a Selector which will select the objects it created for you.
     def created = alaudaDevops.newApp( 'https://github.com/alaudaDevops/ruby-hello-world' )
 
@@ -240,18 +239,18 @@ alaudaDevops.withCluster( 'mycluster' ) {
     def bc = created.narrow('bc')
 
     // Let's output the build logs to the Jenkins console. bc.logs()
-    // would run `oc logs bc/ruby-hello-world`, but that might only
+    // would run `kubectl logs bc/ruby-hello-world`, but that might only
     // output a partial log if the build is in progress. Instead, we will
-    // pass '-f' to `oc logs` to follow the build until it terminates.
-    // Arguments to logs get passed directly on to the oc command line.
+    // pass '-f' to `kubectl logs` to follow the build until it terminates.
+    // Arguments to logs get passed directly on to the kubectl command line.
     def result = bc.logs('-f')
 
     // Many operations, like logs(), return a Result object (even a Selector
     // is a subclass of Result). A Result object contains detailed information about
     // what actions, if any, took place to accomplish an operation.
-    echo "The logs operation require ${result.actions.size()} oc interactions"
+    echo "The logs operation require ${result.actions.size()} kubectl interactions"
 
-    // You can even see exactly what oc command was executed.
+    // You can even see exactly what kubectl command was executed.
     echo "Logs executed: ${result.actions[0].cmd}"
 
     // And even obtain the standard output and standard error of the command.
@@ -260,7 +259,7 @@ alaudaDevops.withCluster( 'mycluster' ) {
 
     // And if after some processing within your pipeline, if you decide
     // you need to initiate a new build after the one initiated by
-    // new-app, simply call the `oc start-build` equivalent:
+    // new-app, simply call the `kubectl start-build` equivalent:
     def buildSelector = bc.startBuild()
     buildSelector.logs('-f')
 }
@@ -436,7 +435,7 @@ alaudaDevops.withCluster( 'mycluster' ) {
 ```groovy
 alaudaDevops.withCluster( 'mycluster' ) {
 
-    // One straightforward way is to pass string arguments directly to `oc process`.
+    // One straightforward way is to pass string arguments directly to `kubectl process`.
     // This includes any parameter values you want to specify.
     def models = alaudaDevops.process( "alaudaDevops//mongodb-ephemeral", "-p", "MEMORY_LIMIT=600Mi" )
 
@@ -478,7 +477,7 @@ alaudaDevops.withCluster( 'devcluster' ) {
     def maps = alaudaDevops.selector( 'dc', [ microservice: 'maps' ] )
 
     // Model the source objects using the 'exportable' flag to strip cluster
-    // specific information from the objects (i.e. like 'oc export').
+    // specific information from the objects (i.e. like 'kubectl export').
     def objs = maps.objects( exportable:true )
 
     // Modify the models as you see fit.
@@ -537,7 +536,7 @@ the token will be masked as shown):
 ```
 Error encountered: hudson.AbortException: new-project returned an error; sub-step failed:
 {reference={}, err=error: You must be logged in to the server (the server has asked for the client to provide credentials),
-verb=new-project, cmd=oc my-new-project --skip-config-write --insecure-skip-tls-verify
+verb=new-project, cmd=kubectl my-new-project --skip-config-write --insecure-skip-tls-verify
 --server=https://192.168.1.109:8443 --namespace=myproject --token=XXXXX , out=, status=1}
 ```
 
@@ -548,7 +547,7 @@ Want to see the details of your Alauda API Server interactions?
 alaudaDevops.withCluster( 'mycluster' ) {
 
     alaudaDevops.verbose()
-    // Get details printed to the Jenkins console and pass high --log-level to all oc commands
+    // Get details printed to the Jenkins console and pass high --log-level to all kubectl commands
     alaudaDevops.newProject( 'my-new-project' )
     alaudaDevops.verbose(false) // Turn it back
 
@@ -590,7 +589,7 @@ alaudaDevops.withCluster( 'mycluster' ) {
 
 ### I need more.
 If the available DSL operations are not sufficient, you can always pass a
-raw command directly to the oc binary. If you do not specify a server,
+raw command directly to the kubectl binary. If you do not specify a server,
 token, or project, normal closure context rules will apply.
 ```groovy
 alaudaDevops.withCluster( 'mycluster' ) {
@@ -700,10 +699,9 @@ may interfere with the intentions of your use of various `alaudaDevops.with...` 
 
 In the case where you run Jenkins out of an Alauda pod though via the Alauda Jenkins image, the 
 environment is set up such that conflicts of this nature will not occur.
- 
-
 
 ## You call this documentation?!
+
 Not exactly. This is a brief overview of some of the capabilities of the plugin. The details
 of the API are embedded within the plugin's online documentation within a running Jenkins instance.
 To find it:
@@ -711,8 +709,3 @@ To find it:
 2. Click "Pipeline Syntax" below the DSL text area
 3. On the left navigation menu, click "Global Variables Reference"
 
-A preview is provided below, but please see the Global Variable Reference in a running
-instance for the latest API information.
-
-<!-- Created using Firefox Nimbus screenshot plugin. Choose page fragment -->
-![jenkins-online-help](src/readme/images/jenkins-online-help.png)
