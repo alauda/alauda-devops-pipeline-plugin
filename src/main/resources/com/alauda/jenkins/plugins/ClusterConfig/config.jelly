@@ -26,4 +26,7 @@
         <f:textbox/>
     </f:entry>
 
+    <f:validateButton title="${%Test Connection}" method="verifyConnect"
+                      with="serverUrl,credentialsId,serverCertificateAuthority,skipTlsVerify" progress="Testing..."/>
+
 </j:jelly>

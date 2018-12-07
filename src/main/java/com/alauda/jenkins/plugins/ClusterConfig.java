@@ -1,5 +1,6 @@
 package com.alauda.jenkins.plugins;
 
+import com.alauda.jenkins.plugins.util.CredentialsUtils;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.Extension;
 import hudson.Util;
@@ -9,12 +10,34 @@ import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okio.Buffer;
+import okio.ByteString;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
+import javax.net.ssl.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.*;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.Collection;
 
 public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig>
         implements Serializable {
@@ -97,8 +120,8 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig>
 
     /**
      * @return Returns a URL to contact the API server of the Devops cluster
-     *         running this node or throws an Exception if it cannot be
-     *         determined.
+     * running this node or throws an Exception if it cannot be
+     * determined.
      */
     @Whitelisted
     public static String getHostClusterApiServerUrl() {
@@ -159,6 +182,31 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig>
             return FormValidation.validateRequired(value);
         }
 
+        public FormValidation doVerifyConnect(@QueryParameter String serverUrl,
+                                              @QueryParameter String credentialsId,
+                                              @QueryParameter String serverCertificateAuthority,
+                                              @QueryParameter boolean skipTlsVerify) {
+            String token;
+            try {
+                token = CredentialsUtils.getToken(credentialsId);
+            } catch (GeneralSecurityException e) {
+                return FormValidation.error(String.format("Failed to connect to Cluster: %s", e.getMessage()));
+            }
+
+            SimpleKubernetesAvailabilityTestClient testClient =
+                    new SimpleKubernetesAvailabilityTestClient(serverUrl, skipTlsVerify, serverCertificateAuthority, token);
+
+            try {
+                if (testClient.testConnection()) {
+                    return FormValidation.ok(String.format("Connect to %s success.", serverUrl));
+                } else {
+                    return FormValidation.error("Failed to connect to cluster");
+                }
+            } catch (GeneralSecurityException | IOException e) {
+                return FormValidation.error(String.format("Failed to connect to Cluster: %s", e.getMessage()));
+            }
+        }
+
         public ListBoxModel doFillCredentialsIdItems(
                 @QueryParameter String credentialsId) {
             // It is valid to choose no default credential, so enable
@@ -166,5 +214,172 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig>
             return ClusterConfig.doFillCredentialsIdItems(credentialsId);
         }
 
+    }
+
+    /**
+     * A very simple HTTP-Based client that only used to test connection availability.
+     */
+    private static class SimpleKubernetesAvailabilityTestClient {
+        private String serverUrl;
+        private String defaultProject;
+        private boolean skipTlsVerify;
+        private String serverCertificate;
+        private String token;
+
+        SimpleKubernetesAvailabilityTestClient(String serverUrl, boolean skipTlsVerify, String serverCertificate, String token) {
+            this.serverUrl = serverUrl;
+            this.defaultProject = defaultProject;
+            this.skipTlsVerify = skipTlsVerify;
+            this.serverCertificate = serverCertificate;
+            this.token = token;
+        }
+
+        /**
+         * Test connection availability
+         *
+         * @return true if the connection is available
+         */
+        boolean testConnection() throws GeneralSecurityException, IOException {
+            OkHttpClient client;
+
+            if (skipTlsVerify) {
+                client = insecureHttpClient();
+            } else {
+                client = customCAHttpClient(serverCertificate);
+            }
+
+            serverUrl = serverUrl.endsWith("/") ? serverUrl : serverUrl + "/";
+            String wholeUrl = serverUrl + "api/v1/namespaces";
+
+            Request req = new Request.Builder()
+                    .url(wholeUrl)
+                    .addHeader("Authorization", "Bearer " + token)
+                    .build();
+
+            Response res = client.newCall(req).execute();
+
+            JSONObject jsonObject = JSONObject.fromObject(res.body().string());
+
+            if (jsonObject == null) {
+                return false;
+            }
+
+            return jsonObject.getString("kind").equals("NamespaceList");
+        }
+
+        /**
+         * Create an OKHttpClient which trust the self-signed certificate.
+         *
+         * @return OKHttpClient
+         */
+        private OkHttpClient insecureHttpClient() throws KeyManagementException, NoSuchAlgorithmException {
+            X509TrustManager acceptAllTrustManager = new X509TrustManager() {
+                @Override
+                public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                }
+
+                @Override
+                public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                }
+
+                @Override
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
+            };
+
+            SSLSocketFactory sslSocketFactory;
+
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, new TrustManager[]{acceptAllTrustManager}, new SecureRandom());
+            sslSocketFactory = sc.getSocketFactory();
+
+            return new OkHttpClient.Builder()
+                    .sslSocketFactory(sslSocketFactory, acceptAllTrustManager)
+                    .hostnameVerifier((h, s) -> true)
+                    .build();
+        }
+
+        /**
+         * Create a OKHttpClient which trust the custom certificate
+         *
+         * @param serverCertificate certificate inputted by user
+         * @return OKHttpClient
+         */
+        private OkHttpClient customCAHttpClient(String serverCertificate) throws IOException, GeneralSecurityException {
+            OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
+
+            if (StringUtils.isEmpty(serverCertificate)) {
+                return clientBuilder.build();
+            }
+
+            Buffer buffer = new Buffer();
+            if (Files.exists(Paths.get(serverCertificate))) {
+                buffer.write(Files.readAllBytes(Paths.get(serverCertificate)));
+            } else {
+                buffer.writeUtf8(serverCertificate);
+            }
+
+            X509TrustManager trustManager = trustManagerForCertificates(buffer.inputStream());
+
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, new TrustManager[]{trustManager}, null);
+
+            SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+            return clientBuilder
+                    .sslSocketFactory(sslSocketFactory, trustManager)
+                    .build();
+
+        }
+
+        /**
+         * Create trust manager which trust the certificates.
+         *
+         * @param in InputStream to read the certificates
+         * @return TrustManager which trust the certificates
+         */
+        private X509TrustManager trustManagerForCertificates(InputStream in)
+                throws GeneralSecurityException {
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+            Collection<? extends Certificate> certificates = certificateFactory.generateCertificates(in);
+            if (certificates.isEmpty()) {
+                throw new IllegalArgumentException("expected non-empty set of trusted certificates");
+            }
+
+            // Put the certificates a key store.
+            char[] password = "password".toCharArray(); // Any password will work.
+            KeyStore keyStore = newEmptyKeyStore(password);
+            int index = 0;
+            for (Certificate certificate : certificates) {
+                String certificateAlias = Integer.toString(index++);
+                keyStore.setCertificateEntry(certificateAlias, certificate);
+            }
+
+            // Use it to build an X509 trust manager.
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+                    KeyManagerFactory.getDefaultAlgorithm());
+            keyManagerFactory.init(keyStore, password);
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+                    TrustManagerFactory.getDefaultAlgorithm());
+            trustManagerFactory.init(keyStore);
+            TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+            if (trustManagers.length != 1 || !(trustManagers[0] instanceof X509TrustManager)) {
+                throw new IllegalStateException("Unexpected default trust managers:"
+                        + Arrays.toString(trustManagers));
+            }
+            return (X509TrustManager) trustManagers[0];
+        }
+
+        private KeyStore newEmptyKeyStore(char[] password) throws GeneralSecurityException {
+            try {
+                KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                InputStream in = null; // By convention, 'null' creates an empty key store.
+                keyStore.load(in, password);
+                return keyStore;
+            } catch (IOException e) {
+                throw new AssertionError(e);
+            }
+        }
     }
 }
