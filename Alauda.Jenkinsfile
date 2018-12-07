@@ -81,40 +81,15 @@ pipeline {
 			}
 		}
 		stage('CI'){
-			failFast true
-			parallel {
-				stage('Build') {
-					steps {
-						script {
-							// setup kubectl
-							if (GIT_BRANCH == "master") {
-								// master is already merged
-								deploy.setupStaging()
+            steps {
+                script {
+                    sh """
+                        mvn clean install -U -Dmaven.test.skip=true
+                    """
 
-							} else {
-								// pull-requests
-								deploy.setupInt()
-							}
-
-							sh """
-                                mvn clean install -U -Dmaven.test.skip=true
-                                # tests needs refactoring, still using the same host address for multiple jenkins instances
-                                # mvn clean install -U findbugs:findbugs
-
-                                if [ -d .tmp ]; then
-                                  rm -rf .tmp
-                                fi;
-
-                                mkdir .tmp
-                                cp artifacts/images/* .tmp
-                                cp target/*.hpi .tmp
-                            """
-
-                            archiveArtifacts 'target/*.hpi'
-						}
-					}
-				}
-			}
+                    archiveArtifacts 'target/*.hpi'
+                }
+            }
 		}
 
 		// after build it should start deploying
@@ -125,9 +100,6 @@ pipeline {
 			}
 			steps {
 				script {
-					// promote to release
-					IMAGE.push("release")
-
 					// adding tag to the current commit
 					withCredentials([usernamePassword(credentialsId: TAG_CREDENTIALS, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
 						sh "git tag -l | xargs git tag -d" // clean local tags
