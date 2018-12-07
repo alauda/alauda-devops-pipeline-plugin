@@ -7,7 +7,6 @@ import hudson.security.ACL;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.FileNotFoundException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 
