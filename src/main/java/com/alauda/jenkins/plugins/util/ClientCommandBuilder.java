@@ -107,6 +107,8 @@ public class ClientCommandBuilder implements Serializable {
         }
 
         String token = this.token;
+        // When command line be constructed for logging purpose,
+        // not to show token directly to avoid real token value be logged to console
         if (redacted && token != null) {
             token = "XXXXX";
         }
