@@ -75,19 +75,19 @@ public class ClientCommandBuilder implements Serializable {
         String toolName = (new Devops.DescriptorImpl()).getClientToolName();
         cmd.add(toolName);
 
-//        if (this.server != null) {
-//            cmd.add("--server=" + server);
-//        }
-//
-//        cmd.addAll(toStringArray(this.advArgs));
-//
-//        if (this.skipTLSVerify) {
-//            cmd.add("--insecure-skip-tls-verify");
-//        } else {
-//            if (this.caPath != null) {
-//                cmd.add("--certificate-authority=" + this.caPath);
-//            }
-//        }
+        if (this.server != null) {
+            cmd.add("--server=" + server);
+        }
+
+        cmd.addAll(toStringArray(this.advArgs));
+
+        if (this.skipTLSVerify) {
+            cmd.add("--insecure-skip-tls-verify");
+        } else {
+            if (this.caPath != null) {
+                cmd.add("--certificate-authority=" + this.caPath);
+            }
+        }
 
         if (this.project != null) {
             if (!hasArg(cmd, "-n", "--namespace")) { // only set namespace if
@@ -97,25 +97,27 @@ public class ClientCommandBuilder implements Serializable {
             }
         }
 
-//        // Some arguments may be long and provide little value (e.g. the path of
-//        // the server CA),
-//        // so hide them unless we are in logLevel mode.
-//        if (!redacted || logLevel > 0) {
-//            if (!hasArg(cmd, "--loglevel")) {
-//                cmd.add("--loglevel=" + logLevel);
-//            }
-//        }
-//
-//        String token = this.token;
-//        if (redacted && token != null) {
-//            token = "XXXXX";
-//        }
-//
-//        if (token != null) {
-//            if (!hasArg(cmd, "--token")) { // only set if not specified
-//                cmd.add("--token=" + token);
-//            }
-//        }
+        // Some arguments may be long and provide little value (e.g. the path of
+        // the server CA),
+        // so hide them unless we are in logLevel mode.
+        if (!redacted || logLevel > 0) {
+            if (!hasArg(cmd, "-v")) {
+                cmd.add("-v=" + logLevel);
+            }
+        }
+
+        String token = this.token;
+        // When command line be constructed for logging purpose,
+        // not to show token directly to avoid real token value be logged to console
+        if (redacted && token != null) {
+            token = "XXXXX";
+        }
+
+        if (token != null) {
+            if (!hasArg(cmd, "--token")) { // only set if not specified
+                cmd.add("--token=" + token);
+            }
+        }
 
         cmd.add(verb);
 
