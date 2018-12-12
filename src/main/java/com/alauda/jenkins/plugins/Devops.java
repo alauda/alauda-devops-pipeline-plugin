@@ -6,6 +6,8 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.ListBoxModel;
 import net.sf.json.JSONObject;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.util.ArrayList;
@@ -17,6 +19,7 @@ public class Devops extends AbstractDescribableImpl<Devops> {
     public static final String DEFAULT_LOGLEVEL = "0";
 
     @Extension
+    @Symbol("alaudaClientConfiguration")
     public static class DescriptorImpl extends Descriptor<Devops> {
 
         // Store a config version so we're able to migrate config.
@@ -87,6 +90,11 @@ public class Devops extends AbstractDescribableImpl<Devops> {
                 return new ArrayList<>(0);
             }
             return Collections.unmodifiableList(clusterConfigs);
+        }
+
+        @DataBoundSetter
+        public void setClusterConfigs(List<ClusterConfig> clusterConfigs) {
+            this.clusterConfigs = clusterConfigs;
         }
 
         /**

@@ -50,7 +50,7 @@ public class DevopsClientTools extends ToolInstallation implements
     }
 
     @Extension
-    @Symbol("oc")
+    @Symbol("alaudaClient")
     public static class DescriptorImpl extends
             ToolDescriptor<DevopsClientTools> {
 
