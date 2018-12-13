@@ -19,7 +19,7 @@ public class Devops extends AbstractDescribableImpl<Devops> {
     public static final String DEFAULT_LOGLEVEL = "0";
 
     @Extension
-    @Symbol("alaudaClientConfiguration")
+    @Symbol("alaudaDevOpsClientConfiguration")
     public static class DescriptorImpl extends Descriptor<Devops> {
 
         // Store a config version so we're able to migrate config.
