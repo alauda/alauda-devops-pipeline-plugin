@@ -1,4 +1,4 @@
-package com.alauda.jenkins.plugins.pipeline;
+package com.alauda.jenkins.plugins;
 
 import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
 import org.jenkinsci.plugins.workflow.cps.Snippetizer;
