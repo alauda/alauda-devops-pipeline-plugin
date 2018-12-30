@@ -84,7 +84,7 @@ pipeline {
             steps {
                 script {
                     sh """
-                        mvn clean install -U -Dmaven.test.skip=true
+                        mvn clean install -U
                     """
 
                     archiveArtifacts 'target/*.hpi'
