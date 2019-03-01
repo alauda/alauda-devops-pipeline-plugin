@@ -107,7 +107,7 @@ class AlaudaDevopsDSL implements Serializable {
             this.@parent = parent;
             this.@id = id;
             this.@exec = script._OcContextInit();
-            
+
         }
 
         public <V> V run(Closure<V> body) {
@@ -367,6 +367,36 @@ class AlaudaDevopsDSL implements Serializable {
         return context.run {
             body()
         }
+    }
+
+    public <V> void withAlaudaSonar(Object oproject, Object obindingName, Closure<V> body) {
+        String project = toSingleString(oproject)
+        String bindingName = toSingleString(obindingName)
+
+        def binding
+        def secretName
+        def secretNamespace
+        def apiUrl
+        def encodedToken
+
+        withProject(project) {
+            binding = selector("codequalitybinding.devops.alauda.io", bindingName).object()
+            secretName = binding.spec.secret.name
+            secretNamespace = binding.spec.secret.namespace
+
+            def toolName = binding.spec.codeQualityTool.name
+            def tool = selector("codequalitytool.devops.alauda.io", toolName).object()
+            apiUrl = tool.spec.http.host
+        }
+
+        withProject(secretNamespace) {
+            encodedToken = selector("secret", secretName).object().data.password
+        }
+
+        script.withParameterAlaudaSonar(namespace: project, sonarBindingName: bindingName, serverUrl: apiUrl, encodedServerAuthenticationToken: encodedToken) {
+            body()
+        }
+
     }
 
     // Will eventually be deprecated in favor of withCredentials
