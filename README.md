@@ -24,6 +24,7 @@
   - [Need to update an object without replacing it?](#need-to-update-an-object-without-replacing-it)
   - [Cannot live without Alauda templates? No problem.](#cannot-live-without-alauda-templates-no-problem)
   - [Want to promote or migrate objects between environments?](#want-to-promote-or-migrate-objects-between-environments)
+  - [Get Sonarqube Binding in Project and Use It](#get-sonarqube-binding-in-projecct-and-use-it)
   - [Error handling](#error-handling)
   - [Troubleshooting](#troubleshooting)
   - [Who are you, really?](#who-are-you-really)
@@ -510,6 +511,20 @@ alaudaDevops.withCluster( 'devcluster' ) {
 }
 ```
 
+### Get Sonarqube Binding in Project and Use It
+```groovy
+    
+    alaudaDevops.withBindInProjectSonarEnv('dev-cluster', 'sonarqube-binding') {
+        sh "sonar-scanner"
+    }
+    
+    script {
+        def qualityGate = waitForQualityGate()
+        sh "echo Quality gate result: ${qualityGate.status}"
+    }
+```
+    
+    
 ### Error handling
 Error handling is fairly standard for Jenkins DSL scripts. try/catch blocks
 can be used prevent recoverable errors from causing a build to fail.

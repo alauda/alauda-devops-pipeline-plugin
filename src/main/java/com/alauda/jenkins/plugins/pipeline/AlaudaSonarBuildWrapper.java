@@ -45,7 +45,7 @@ public class AlaudaSonarBuildWrapper extends SonarBuildWrapper {
     }
 
 
-    @Symbol("withParameterAlaudaSonar")
+    @Symbol("withDestructuringParameterSonarEnv")
     @Extension
     public static final class DescriptorImpl extends BuildWrapperDescriptor {
 

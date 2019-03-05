@@ -369,7 +369,7 @@ class AlaudaDevopsDSL implements Serializable {
         }
     }
 
-    public <V> void withAlaudaSonar(Object oproject, Object obindingName, Closure<V> body) {
+    public <V> void withBindInProjectSonarEnv(Object oproject, Object obindingName, Closure<V> body) {
         String project = toSingleString(oproject)
         String bindingName = toSingleString(obindingName)
 
@@ -393,7 +393,7 @@ class AlaudaDevopsDSL implements Serializable {
             encodedToken = selector("secret", secretName).object().data.password
         }
 
-        script.withParameterAlaudaSonar(namespace: project, sonarBindingName: bindingName, serverUrl: apiUrl, encodedServerAuthenticationToken: encodedToken) {
+        script.withDestructuringParameterSonarEnv(namespace: project, sonarBindingName: bindingName, serverUrl: apiUrl, encodedServerAuthenticationToken: encodedToken) {
             body()
         }
 
