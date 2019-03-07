@@ -369,6 +369,21 @@ class AlaudaDevopsDSL implements Serializable {
         }
     }
 
+    /**
+     * Inject SonarQube environment to context.
+     * <br>
+     * usage example:
+     *
+     * <pre>
+     * withBindingInProjectSonarEnv("test-namespace", "test-code-quality-binding") {
+     *     sh "echo \"SonarQube Server URL is $SONAR_SERVER_URL\""
+     *     sh "echo \"SonarQube Server token is $SONAR_TOKEN\""
+     * }
+     * </pre>
+     *
+     * @param oproject namespace of code quality binding
+     * @param obindingName name of code quality binding
+     */
     public <V> void withBindInProjectSonarEnv(Object oproject, Object obindingName, Closure<V> body) {
         String project = toSingleString(oproject)
         String bindingName = toSingleString(obindingName)
