@@ -377,7 +377,7 @@ class AlaudaDevopsDSL implements Serializable {
         def secretName
         def secretNamespace
         def apiUrl
-        def encodedToken
+        def token
 
         withProject(project) {
             binding = selector("codequalitybinding.devops.alauda.io", bindingName).object()
@@ -390,13 +390,15 @@ class AlaudaDevopsDSL implements Serializable {
         }
 
         withProject(secretNamespace) {
-            encodedToken = selector("secret", secretName).object().data.password
+            token = selector("secret", secretName).object().data.password
+            // use shebang line to avoid the decoded token to be printed to the console log
+            token = script.sh(script: '#!/bin/sh -e\n' + "echo $token | base64 --decode", returnStdout: true)
         }
 
-        script.withDestructuringParameterSonarEnv(namespace: project, sonarBindingName: bindingName, serverUrl: apiUrl, encodedServerAuthenticationToken: encodedToken) {
-            body()
-        }
+        script.setProperty("SONAR_SERVER_URL", apiUrl)
+        script.setProperty("SONAR_TOKEN", token)
 
+        body()
     }
 
     // Will eventually be deprecated in favor of withCredentials
