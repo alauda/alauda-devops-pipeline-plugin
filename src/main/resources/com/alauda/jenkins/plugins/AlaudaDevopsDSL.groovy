@@ -407,7 +407,7 @@ class AlaudaDevopsDSL implements Serializable {
         withProject(secretNamespace) {
             token = selector("secret", secretName).object().data.password
             // use shebang line to avoid the decoded token to be printed to the console log
-            token = script.sh(script: '#!/bin/sh -e\n' + "echo $token | base64 --decode", returnStdout: true)
+            token = script.base64Decode(token)
         }
 
         script.setProperty("SONAR_SERVER_URL", apiUrl)
