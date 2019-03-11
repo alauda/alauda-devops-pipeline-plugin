@@ -107,7 +107,7 @@ class AlaudaDevopsDSL implements Serializable {
             this.@parent = parent;
             this.@id = id;
             this.@exec = script._OcContextInit();
-            
+
         }
 
         public <V> V run(Closure<V> body) {
@@ -367,6 +367,53 @@ class AlaudaDevopsDSL implements Serializable {
         return context.run {
             body()
         }
+    }
+
+    /**
+     * Inject SonarQube environment to context.
+     * <br>
+     * usage example:
+     *
+     * <pre>
+     * withBindingInProjectSonarEnv("test-namespace", "test-code-quality-binding") {
+     *     sh "echo \"SonarQube Server URL is $SONAR_SERVER_URL\""
+     *     sh "echo \"SonarQube Server token is $SONAR_TOKEN\""
+     * }
+     * </pre>
+     *
+     * @param oproject namespace of code quality binding
+     * @param obindingName name of code quality binding
+     */
+    public <V> void withBindInProjectSonarEnv(Object oproject, Object obindingName, Closure<V> body) {
+        String project = toSingleString(oproject)
+        String bindingName = toSingleString(obindingName)
+
+        def binding
+        def secretName
+        def secretNamespace
+        def apiUrl
+        def token
+
+        withProject(project) {
+            binding = selector("codequalitybinding.devops.alauda.io", bindingName).object()
+            secretName = binding.spec.secret.name
+            secretNamespace = binding.spec.secret.namespace
+
+            def toolName = binding.spec.codeQualityTool.name
+            def tool = selector("codequalitytool.devops.alauda.io", toolName).object()
+            apiUrl = tool.spec.http.host
+        }
+
+        withProject(secretNamespace) {
+            token = selector("secret", secretName).object().data.password
+            // use shebang line to avoid the decoded token to be printed to the console log
+            token = script.base64Decode(token)
+        }
+
+        script.setProperty("SONAR_SERVER_URL", apiUrl)
+        script.setProperty("SONAR_TOKEN", token)
+
+        body()
     }
 
     // Will eventually be deprecated in favor of withCredentials
