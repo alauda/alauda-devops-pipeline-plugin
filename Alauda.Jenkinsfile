@@ -18,7 +18,7 @@ pipeline {
 	// 运行node条件
 	// 为了扩容jenkins的功能一般情况会分开一些功能到不同的node上面
 	// 这样每个node作用比较清晰，并可以并行处理更多的任务量
-	agent { label 'all && java' }
+	agent { label 'golang && java' }
 
 	// (optional) 流水线全局设置
 	options {
@@ -69,27 +69,31 @@ pipeline {
 					sh 'echo "commit=$GIT_COMMIT" > src/main/resources/debug.properties'
 					sh 'echo "build=$RELEASE_BUILD" >> src/main/resources/debug.properties'
 				}
-				// installing golang coverage and report tools
-				sh "go get -u github.com/alauda/gitversion"
-				script {
-					if (GIT_BRANCH == "master") {
-						sh "gitversion patch ${RELEASE_VERSION} > patch"
-						RELEASE_BUILD = readFile("patch").trim()
+				container('golang'){
+					// installing golang coverage and report tools
+					sh "go get -u github.com/alauda/gitversion"
+					script {
+						if (GIT_BRANCH == "master") {
+							sh "gitversion patch ${RELEASE_VERSION} > patch"
+							RELEASE_BUILD = readFile("patch").trim()
+						}
+						echo "release ${RELEASE_VERSION} - release build ${RELEASE_BUILD}"
 					}
-					echo "release ${RELEASE_VERSION} - release build ${RELEASE_BUILD}"
 				}
 			}
 		}
 		stage('CI'){
-            steps {
-                script {
-                    sh """
-                        mvn clean install -U -Dmaven.test.skip=true
-                    """
+		    steps {
+			script {
+				container('java'){
+				    sh """
+					mvn clean install -U -Dmaven.test.skip=true
+				    """
+				}
 
-                    archiveArtifacts 'target/*.hpi'
-                }
-            }
+			    	archiveArtifacts 'target/*.hpi'
+			}
+		    }
 		}
 
 		// after build it should start deploying
@@ -104,9 +108,9 @@ pipeline {
 					withCredentials([usernamePassword(credentialsId: TAG_CREDENTIALS, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
 						sh "git tag -l | xargs git tag -d" // clean local tags
 						sh """
-                        git config --global user.email "alaudabot@alauda.io"
-                        git config --global user.name "Alauda Bot"
-                    """
+							git config --global user.email "alaudabot@alauda.io"
+							git config --global user.name "Alauda Bot"
+						    """
 						def repo = "https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${OWNER}/${REPOSITORY}.git"
 						sh "git fetch --tags ${repo}" // retrieve all tags
 						sh("git tag -a ${RELEASE_BUILD} -m 'auto add release tag by jenkins'")
