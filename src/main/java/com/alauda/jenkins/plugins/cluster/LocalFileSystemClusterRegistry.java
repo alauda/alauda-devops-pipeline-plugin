@@ -11,6 +11,7 @@ import net.sf.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -27,6 +28,11 @@ public class LocalFileSystemClusterRegistry implements ClusterRegistryExtension 
     @Override
     public ClusterRegistry getClusterRegistry(String name) {
         return clusterRegistryMap.get(name);
+    }
+
+    @Override
+    public Collection<ClusterRegistry> getClusterRegistries() {
+        return clusterRegistryMap.values();
     }
 
     @Initializer(after= InitMilestone.PLUGINS_STARTED, fatal=false)

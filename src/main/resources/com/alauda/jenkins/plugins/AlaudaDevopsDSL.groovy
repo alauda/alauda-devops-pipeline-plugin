@@ -10,6 +10,9 @@ import groovy.json.JsonSlurper
 import hudson.AbortException
 import hudson.FilePath
 import hudson.Util
+import hudson.security.ACL
+import jenkins.model.Jenkins
+import org.jenkinsci.plugins.plaincredentials.StringCredentials
 
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -131,10 +134,23 @@ class AlaudaDevopsDSL implements Serializable {
 
         public String getToken() {
             if (this.@credentialsId != null) {
-                DevopsTokenCredentials tokenSecret = CredentialsProvider.findCredentialById(credentialsId, DevopsTokenCredentials.class, script.$build(), Collections.emptyList());
+                List<StringCredentials> stringCredentials = CredentialsProvider.lookupCredentials(StringCredentials.class,
+                        Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList());
+                if(stringCredentials != null) {
+                    for(StringCredentials cred : stringCredentials) {
+                        if(credentialsId.equals(cred.getId())) {
+                            return cred.getSecret().getPlainText();
+                        }
+                    }
+                }
+
+                DevopsTokenCredentials tokenSecret = CredentialsProvider.findCredentialById(credentialsId,
+                        DevopsTokenCredentials.class, script.$build(), Collections.emptyList());
                 if (tokenSecret != null) {
                     return tokenSecret.getToken();
                 }
+
+                LOGGER.log(Level.INFO, String.format("cannot find credential by id: %s", credentialsId))
                 // Otherwise, assume that this is a literal/direct token name
                 return this.@credentialsId;
             }

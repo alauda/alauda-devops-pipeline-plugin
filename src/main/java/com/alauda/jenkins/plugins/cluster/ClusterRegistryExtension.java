@@ -4,10 +4,13 @@ import hudson.ExtensionList;
 import hudson.ExtensionPoint;
 import jenkins.model.Jenkins;
 
+import java.util.Collection;
 import java.util.Optional;
 
 public interface ClusterRegistryExtension extends ExtensionPoint {
     ClusterRegistry getClusterRegistry(String name);
+
+    Collection<ClusterRegistry> getClusterRegistries();
 
     class ClusterRegistry {
         private String name;
