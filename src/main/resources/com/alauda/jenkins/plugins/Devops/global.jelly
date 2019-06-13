@@ -6,6 +6,9 @@
         <f:entry title="${%Cluster Proxy}" field="proxy">
             <f:textbox/>
         </f:entry>
+        <f:entry title="${%Namespace which hold the Cluster Registry}" field="namespace">
+            <f:textbox/>
+        </f:entry>
         <f:entry title="${%Cluster Configurations}" field="clusterConfigs">
             <f:repeatableHeteroProperty field="clusterConfigs" addCaption="Add AlaudaDevops Cluster" hasHeader="true" />
         </f:entry>

@@ -1,5 +1,6 @@
 package com.alauda.jenkins.plugins.cluster;
 
+import com.alauda.jenkins.plugins.Devops;
 import com.alauda.jenkins.plugins.core.NotSupportAuthException;
 import com.alauda.jenkins.plugins.core.NotSupportSecretException;
 import hudson.Extension;
@@ -31,7 +32,6 @@ import java.util.logging.Logger;
 public class DefaultClusterRegistry implements ClusterRegistryExtension, KubernetesClusterConfigurationListener {
     private static final Logger LOGGER = Logger.getLogger(LocalFileSystemClusterRegistry.class.getName());
 
-    private String namespace = "system";
     private Map<String, ClusterRegistry> clusterMap = new ConcurrentHashMap<>();
     private SharedInformerFactory previousFactory;
 
@@ -63,6 +63,8 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
         SharedInformerFactory factory = new SharedInformerFactory();
         previousFactory = factory;
         ClusterregistryK8sIoV1alpha1Api coreV1Api = new ClusterregistryK8sIoV1alpha1Api(client);
+
+        String namespace = new Devops.DescriptorImpl().getNamespace();
 
         // Node informer
         SharedIndexInformer<V1alpha1Cluster> nodeInformer =

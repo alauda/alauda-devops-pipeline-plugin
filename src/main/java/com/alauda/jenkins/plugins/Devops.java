@@ -32,6 +32,7 @@ public class Devops extends AbstractDescribableImpl<Devops> {
 
         public String tool = "kubectl";
         private String proxy;
+        private String namespace = "system";
 
         public DescriptorImpl() {
             configVersion = 1L;
@@ -108,6 +109,15 @@ public class Devops extends AbstractDescribableImpl<Devops> {
         @DataBoundSetter
         public void setProxy(String proxy) {
             this.proxy = proxy;
+        }
+
+        public String getNamespace() {
+            return namespace;
+        }
+
+        @DataBoundSetter
+        public void setNamespace(String namespace) {
+            this.namespace = namespace;
         }
 
         /**
