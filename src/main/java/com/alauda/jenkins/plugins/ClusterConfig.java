@@ -35,7 +35,7 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implements Serializable {
+public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> {
     // Human readable name for cluster. Used in drop down lists.
     private String name;
 
