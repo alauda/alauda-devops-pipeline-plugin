@@ -3,7 +3,7 @@ package com.alauda.jenkins.plugins
 import com.cloudbees.groovy.cps.NonCPS
 import com.cloudbees.plugins.credentials.CredentialsProvider
 import com.alauda.jenkins.plugins.pipeline.AcpAction
-import com.alauda.jenkins.plugins.pipeline.OcContextInit
+import com.alauda.jenkins.plugins.pipeline.AcpContextInit
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
@@ -95,7 +95,7 @@ class AlaudaDevopsDSL implements Serializable {
     private class Context implements Serializable {
 
         protected final Context parent;
-        private final OcContextInit.Execution exec;
+        private final AcpContextInit.Execution exec;
 
         private String credentialsId;
         private String serverUrl;
@@ -109,7 +109,7 @@ class AlaudaDevopsDSL implements Serializable {
         protected Context(Context parent, ContextId id) {
             this.@parent = parent;
             this.@id = id;
-            this.@exec = script._OcContextInit();
+            this.@exec = script._AcpContextInit();
 
         }
 
