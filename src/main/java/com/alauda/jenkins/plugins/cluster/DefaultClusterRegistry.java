@@ -131,7 +131,7 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
         public void onAdd(V1alpha1Cluster cluster) {
             String clusterName = cluster.getMetadata().getName();
 
-            LOGGER.log(Level.INFO, "Add event for ClusterRegistry: {0}", clusterName);
+            LOGGER.log(Level.FINE, "Add event for ClusterRegistry: {0}", clusterName);
             clusterMap.put(clusterName, turn(cluster));
         }
 
@@ -139,7 +139,7 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
         public void onUpdate(V1alpha1Cluster oldCluster, V1alpha1Cluster newCluster) {
             String clusterName = oldCluster.getMetadata().getName();
 
-            LOGGER.log(Level.INFO, "Update event for ClusterRegistry: {0}", clusterName);
+            LOGGER.log(Level.FINE, "Update event for ClusterRegistry: {0}", clusterName);
             clusterMap.put(clusterName, turn(newCluster));
         }
 
@@ -147,7 +147,7 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
         public void onDelete(V1alpha1Cluster cluster, boolean b) {
             String clusterName = cluster.getMetadata().getName();
 
-            LOGGER.log(Level.INFO, "Delete event for ClusterRegistry: {0}", clusterName);
+            LOGGER.log(Level.FINE, "Delete event for ClusterRegistry: {0}", clusterName);
             clusterMap.remove(cluster.getMetadata().getName());
         }
     }
