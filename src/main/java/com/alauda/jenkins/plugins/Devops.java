@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class Devops extends AbstractDescribableImpl<Devops> {
+    public static final String DEFAULT_CLUSTER = "default";
 
     private static final Logger LOGGER = Logger.getLogger(Devops.class.getName());
     public static final String DEFAULT_LOGLEVEL = "0";
@@ -140,6 +141,8 @@ public class Devops extends AbstractDescribableImpl<Devops> {
                     return cc;
                 }
             }
+
+            LOGGER.info(String.format("Cannot find %s from system configuration, try to find from cluster registry.", name));
 
             return findFromClusterRegistry(clusterName);
         }
