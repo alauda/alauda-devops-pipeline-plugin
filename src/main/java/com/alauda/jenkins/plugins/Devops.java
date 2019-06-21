@@ -1,5 +1,6 @@
 package com.alauda.jenkins.plugins;
 
+import com.alauda.jenkins.plugins.cluster.ClusterRegistryExtension;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
@@ -13,9 +14,12 @@ import org.kohsuke.stapler.StaplerRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class Devops extends AbstractDescribableImpl<Devops> {
+    public static final String DEFAULT_CLUSTER = "default";
 
+    private static final Logger LOGGER = Logger.getLogger(Devops.class.getName());
     public static final String DEFAULT_LOGLEVEL = "0";
 
     @Extension
@@ -28,6 +32,8 @@ public class Devops extends AbstractDescribableImpl<Devops> {
         public List<ClusterConfig> clusterConfigs;
 
         public String tool = "kubectl";
+        private String proxy;
+        private String namespace = "system";
 
         public DescriptorImpl() {
             configVersion = 1L;
@@ -97,6 +103,24 @@ public class Devops extends AbstractDescribableImpl<Devops> {
             this.clusterConfigs = clusterConfigs;
         }
 
+        public String getProxy() {
+            return proxy;
+        }
+
+        @DataBoundSetter
+        public void setProxy(String proxy) {
+            this.proxy = proxy;
+        }
+
+        public String getNamespace() {
+            return namespace;
+        }
+
+        @DataBoundSetter
+        public void setNamespace(String namespace) {
+            this.namespace = namespace;
+        }
+
         /**
          * Determines if a cluster has been configured with a given name. If a
          * cluster has been configured with the name, its definition is
@@ -111,15 +135,39 @@ public class Devops extends AbstractDescribableImpl<Devops> {
                 return null;
             }
 
-            name = Util.fixEmptyAndTrim(name);
+            final String clusterName = Util.fixEmptyAndTrim(name);
             for (ClusterConfig cc : clusterConfigs) {
-                if (cc.getName().equalsIgnoreCase(name)) {
+                if (cc.getName().equalsIgnoreCase(clusterName)) {
                     return cc;
                 }
             }
-            return null;
+
+            LOGGER.info(String.format("Cannot find %s from system configuration, try to find from cluster registry.", name));
+
+            return findFromClusterRegistry(clusterName);
         }
 
-    }
+        private ClusterConfig findFromClusterRegistry(String clusterName) {
+            ClusterRegistryExtension extension = ClusterRegistryExtension.findByName(clusterName);
+            if(extension == null) {
+                LOGGER.fine(String.format("no matched ClusterRegistryExtension for cluster: %s", clusterName));
+                return null;
+            }
 
+            ClusterRegistryExtension.ClusterRegistry clusterRegistry = extension.getClusterRegistry(clusterName);
+            if(clusterRegistry == null) {
+                LOGGER.fine(String.format("no matched ClusterRegistry for cluster: %s", clusterName));
+                return null;
+            }
+            ClusterConfig clusterConfig = new ClusterConfig(clusterName);
+            clusterConfig.setCredentialsId(clusterRegistry.getToken());
+            clusterConfig.setServerUrl(getProxy() + "/" + clusterRegistry.getName());
+            clusterConfig.setServerCertificateAuthority(clusterRegistry.getServerCertificateAuthority());
+            clusterConfig.setSkipTlsVerify(clusterRegistry.isSkipTlsVerify());
+            clusterConfig.setProxy(true);
+
+            LOGGER.fine(String.format("cluster server url is: %s", clusterConfig.getServerUrl()));
+            return clusterConfig;
+        }
+    }
 }

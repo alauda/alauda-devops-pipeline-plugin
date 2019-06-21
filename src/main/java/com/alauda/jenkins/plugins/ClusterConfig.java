@@ -35,9 +35,8 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig>
-        implements Serializable {
-
+public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implements Serializable {
+    private static final long serialVersionUID = 1L;
     // Human readable name for cluster. Used in drop down lists.
     private String name;
 
@@ -50,8 +49,9 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig>
 
     // If this cluster is reference, what project to assume, if any.
     private String defaultProject;
-
     private String credentialsId;
+    /** indicate whether it's a proxy cluster config */
+    private boolean proxy = false;
 
     @DataBoundConstructor
     public ClusterConfig(String name) {
@@ -106,6 +106,15 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig>
     @DataBoundSetter
     public void setCredentialsId(String credentialsId) {
         this.credentialsId = Util.fixEmptyAndTrim(credentialsId);
+    }
+
+    public boolean isProxy() {
+        return proxy;
+    }
+
+    @DataBoundSetter
+    public void setProxy(boolean proxy) {
+        this.proxy = proxy;
     }
 
     @Override

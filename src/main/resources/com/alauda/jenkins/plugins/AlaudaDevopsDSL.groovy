@@ -3,13 +3,16 @@ package com.alauda.jenkins.plugins
 import com.cloudbees.groovy.cps.NonCPS
 import com.cloudbees.plugins.credentials.CredentialsProvider
 import com.alauda.jenkins.plugins.pipeline.AcpAction
-import com.alauda.jenkins.plugins.pipeline.OcContextInit
+import com.alauda.jenkins.plugins.pipeline.AcpContextInit
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import hudson.AbortException
 import hudson.FilePath
 import hudson.Util
+import hudson.security.ACL
+import jenkins.model.Jenkins
+import org.jenkinsci.plugins.plaincredentials.StringCredentials
 
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -92,7 +95,7 @@ class AlaudaDevopsDSL implements Serializable {
     private class Context implements Serializable {
 
         protected final Context parent;
-        private final OcContextInit.Execution exec;
+        private final AcpContextInit.Execution exec;
 
         private String credentialsId;
         private String serverUrl;
@@ -106,7 +109,7 @@ class AlaudaDevopsDSL implements Serializable {
         protected Context(Context parent, ContextId id) {
             this.@parent = parent;
             this.@id = id;
-            this.@exec = script._OcContextInit();
+            this.@exec = script._AcpContextInit();
 
         }
 
@@ -131,10 +134,23 @@ class AlaudaDevopsDSL implements Serializable {
 
         public String getToken() {
             if (this.@credentialsId != null) {
-                DevopsTokenCredentials tokenSecret = CredentialsProvider.findCredentialById(credentialsId, DevopsTokenCredentials.class, script.$build(), Collections.emptyList());
+                List<StringCredentials> stringCredentials = CredentialsProvider.lookupCredentials(StringCredentials.class,
+                        Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList());
+                if(stringCredentials != null) {
+                    for(StringCredentials cred : stringCredentials) {
+                        if(credentialsId.equals(cred.getId())) {
+                            return cred.getSecret().getPlainText();
+                        }
+                    }
+                }
+
+                DevopsTokenCredentials tokenSecret = CredentialsProvider.findCredentialById(credentialsId,
+                        DevopsTokenCredentials.class, script.$build(), Collections.emptyList());
                 if (tokenSecret != null) {
                     return tokenSecret.getToken();
                 }
+
+                LOGGER.log(Level.INFO, String.format("cannot find credential by id: %s", credentialsId))
                 // Otherwise, assume that this is a literal/direct token name
                 return this.@credentialsId;
             }

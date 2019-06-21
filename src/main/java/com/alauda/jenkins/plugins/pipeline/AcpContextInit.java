@@ -16,12 +16,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.inject.Inject;
 
-public class OcContextInit extends AbstractStepImpl {
+public class AcpContextInit extends AbstractStepImpl {
 
-    public static final String FUNCTION_NAME = "_OcContextInit";
+    public static final String FUNCTION_NAME = "_AcpContextInit";
 
     @DataBoundConstructor
-    public OcContextInit() {
+    public AcpContextInit() {
     }
 
     @Extension
@@ -58,7 +58,7 @@ public class OcContextInit extends AbstractStepImpl {
         private static final long serialVersionUID = 1L;
 
         @Inject
-        private transient OcContextInit step;
+        private transient AcpContextInit step;
 
         @StepContextParameter
         private transient TaskListener listener;
