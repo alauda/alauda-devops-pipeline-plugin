@@ -11,7 +11,7 @@
 
     <groupId>com.alauda.jenkins.plugins</groupId>
     <artifactId>alauda-devops-pipeline</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <properties>
@@ -76,7 +76,7 @@
       <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
       <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
       <url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
-      <tag>alauda-devops-pipeline-2.0.0</tag>
+      <tag>${project.version}</tag>
     </scm>
 
     <repositories>
