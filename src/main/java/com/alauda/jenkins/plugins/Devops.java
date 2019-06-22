@@ -1,11 +1,14 @@
 package com.alauda.jenkins.plugins;
 
 import com.alauda.jenkins.plugins.cluster.ClusterRegistryExtension;
+import com.alauda.jenkins.plugins.cluster.DefaultClusterRegistry;
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -77,6 +80,17 @@ public class Devops extends AbstractDescribableImpl<Devops> {
 
             req.bindJSON(this, json.getJSONObject("alaudaDevops"));
             save();
+
+            // should re-watch cluster
+            ExtensionList<DefaultClusterRegistry> defaultClusterRegistry =
+                    Jenkins.getInstance().getExtensionList(DefaultClusterRegistry.class);
+            if(defaultClusterRegistry != null && defaultClusterRegistry.size() > 0) {
+                if(defaultClusterRegistry.get(0) != null) {
+                    defaultClusterRegistry.get(0).watch();
+                    LOGGER.info("DefaultClusterRegistry is reloaded.");
+                }
+            }
+
             return true;
         }
 
