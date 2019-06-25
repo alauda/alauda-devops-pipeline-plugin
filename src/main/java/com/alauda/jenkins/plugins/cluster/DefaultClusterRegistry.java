@@ -34,6 +34,8 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
 
     private Map<String, ClusterRegistry> clusterMap = new ConcurrentHashMap<>();
     private SharedInformerFactory previousFactory;
+    private KubernetesCluster kubernetesCluster;
+    private ApiClient apiClient;
 
     @Override
     public ClusterRegistry getClusterRegistry(String name) {
@@ -51,18 +53,21 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
     @Override
     public void onConfigChange(KubernetesCluster kubernetesCluster, ApiClient apiClient) {
         clusterMap.clear();
-        watch(kubernetesCluster, apiClient);
+        this.kubernetesCluster = kubernetesCluster;
+        this.apiClient = apiClient;
+
+        watch();
     }
 
-    private void watch(KubernetesCluster cluster, ApiClient client) {
+    public void watch() {
         if(previousFactory != null) {
             previousFactory.stopAllRegisteredInformers();
         }
 
-        client.getHttpClient().setReadTimeout(0, TimeUnit.SECONDS); // infinite timeout
+        apiClient.getHttpClient().setReadTimeout(0, TimeUnit.SECONDS); // infinite timeout
         SharedInformerFactory factory = new SharedInformerFactory();
         previousFactory = factory;
-        ClusterregistryK8sIoV1alpha1Api coreV1Api = new ClusterregistryK8sIoV1alpha1Api(client);
+        ClusterregistryK8sIoV1alpha1Api coreV1Api = new ClusterregistryK8sIoV1alpha1Api(apiClient);
 
         String namespace = new Devops.DescriptorImpl().getNamespace();
 

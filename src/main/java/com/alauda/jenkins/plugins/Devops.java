@@ -1,11 +1,14 @@
 package com.alauda.jenkins.plugins;
 
 import com.alauda.jenkins.plugins.cluster.ClusterRegistryExtension;
+import com.alauda.jenkins.plugins.cluster.DefaultClusterRegistry;
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -14,6 +17,8 @@ import org.kohsuke.stapler.StaplerRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Devops extends AbstractDescribableImpl<Devops> {
@@ -77,6 +82,17 @@ public class Devops extends AbstractDescribableImpl<Devops> {
 
             req.bindJSON(this, json.getJSONObject("alaudaDevops"));
             save();
+
+            // should re-watch cluster
+            ExtensionList<DefaultClusterRegistry> defaultClusterRegistry =
+                    Jenkins.getInstance().getExtensionList(DefaultClusterRegistry.class);
+            if(defaultClusterRegistry != null && defaultClusterRegistry.size() > 0) {
+                if(defaultClusterRegistry.get(0) != null) {
+                    defaultClusterRegistry.get(0).watch();
+                    LOGGER.info("DefaultClusterRegistry is reloaded.");
+                }
+            }
+
             return true;
         }
 
@@ -131,20 +147,27 @@ public class Devops extends AbstractDescribableImpl<Devops> {
          * @return A ClusterConfig for the supplied parameters OR null.
          */
         public ClusterConfig getClusterConfig(String name) {
-            if (clusterConfigs == null) {
+            final String clusterName = Util.fixEmptyAndTrim(name);
+
+            Optional<ClusterConfig> clusterConfigOpt = Optional.empty();
+
+            if (clusterConfigs != null) {
+                clusterConfigOpt = clusterConfigs.stream()
+                        .filter(cc  -> cc.getName().equalsIgnoreCase(clusterName))
+                        .findFirst();
+            }
+
+            if (!clusterConfigOpt.isPresent()) {
+                LOGGER.info(String.format("Cannot find %s from system configuration, try to find from cluster registry.", name));
+                clusterConfigOpt = Optional.ofNullable(findFromClusterRegistry(clusterName));
+            }
+
+            if (!clusterConfigOpt.isPresent()) {
+                LOGGER.log(Level.WARNING, "Cannot find cluster %s from both system configuration and clusterregistry");
                 return null;
             }
 
-            final String clusterName = Util.fixEmptyAndTrim(name);
-            for (ClusterConfig cc : clusterConfigs) {
-                if (cc.getName().equalsIgnoreCase(clusterName)) {
-                    return cc;
-                }
-            }
-
-            LOGGER.info(String.format("Cannot find %s from system configuration, try to find from cluster registry.", name));
-
-            return findFromClusterRegistry(clusterName);
+            return clusterConfigOpt.get();
         }
 
         private ClusterConfig findFromClusterRegistry(String clusterName) {
