@@ -1,7 +1,11 @@
 package com.alauda.jenkins.plugins;
 
 import com.alauda.jenkins.plugins.util.CredentialsUtils;
+import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardCertificateCredentials;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
@@ -16,6 +20,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okio.Buffer;
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -151,24 +156,22 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
             credentialsId = "";
         }
 
-        if (!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+        Jenkins jenkins = Jenkins.getInstance();
+        AbstractIdCredentialsListBoxModel<StandardListBoxModel, StandardCredentials> defaultCredentials =
+                new StandardListBoxModel().includeEmptyValue()
+                .includeCurrentValue(credentialsId);
+
+        if (!jenkins.hasPermission(Jenkins.ADMINISTER)) {
             // Important! Otherwise you expose credentials metadata to random
             // web requests.
-            return new StandardListBoxModel()
-                    .includeCurrentValue(credentialsId);
+            return defaultCredentials;
         }
 
-        return new StandardListBoxModel()
-                .includeEmptyValue()
-                .includeAs(ACL.SYSTEM, Jenkins.getInstance(),
-                        DevopsTokenCredentials.class)
-                // .includeAs(ACL.SYSTEM, Jenkins.getInstance(),
-                // StandardUsernamePasswordCredentials.class)
-                // .includeAs(ACL.SYSTEM, Jenkins.getInstance(),
-                // StandardCertificateCredentials.class)
-                // TODO: Make own type for token or use the existing token
-                // generator auth type used by sync plugin? or kubernetes?
-                .includeCurrentValue(credentialsId);
+        return defaultCredentials
+                .includeAs(ACL.SYSTEM, jenkins, DevopsTokenCredentials.class) // TODO will remove this in later version
+                .includeAs(ACL.SYSTEM, jenkins, StringCredentials.class)
+                .includeAs(ACL.SYSTEM, jenkins, StandardUsernamePasswordCredentials.class)
+                .includeAs(ACL.SYSTEM, jenkins, StandardCertificateCredentials.class);
     }
 
     @Extension

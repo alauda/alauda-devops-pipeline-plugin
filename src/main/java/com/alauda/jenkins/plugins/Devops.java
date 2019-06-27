@@ -8,6 +8,8 @@ import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.ListBoxModel;
+import io.alauda.jenkins.devops.support.KubernetesCluster;
+import io.alauda.jenkins.devops.support.KubernetesClusterConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
@@ -30,6 +32,7 @@ public class Devops extends AbstractDescribableImpl<Devops> {
     @Extension
     @Symbol("alaudaDevOpsClientConfiguration")
     public static class DescriptorImpl extends Descriptor<Devops> {
+        private static final long serialVersionUID = 1L;
 
         // Store a config version so we're able to migrate config.
         public Long configVersion;
@@ -81,6 +84,25 @@ public class Devops extends AbstractDescribableImpl<Devops> {
             clusterConfigs = null;
 
             req.bindJSON(this, json.getJSONObject("alaudaDevops"));
+
+            KubernetesClusterConfiguration config = KubernetesClusterConfiguration.get();
+            if(config != null) {
+                KubernetesCluster cluster = config.getCluster();
+
+                ClusterConfig clusterConfig = getLocalClusterConfig(Devops.DEFAULT_CLUSTER);
+                if(clusterConfig == null) {
+                    clusterConfig = new ClusterConfig(Devops.DEFAULT_CLUSTER);
+                    addClusterConfig(clusterConfig);
+                }
+
+                clusterConfig.setServerUrl(cluster.getMasterUrl());
+                clusterConfig.setSkipTlsVerify(cluster.isSkipTlsVerify());
+                clusterConfig.setCredentialsId(cluster.getCredentialsId());
+                clusterConfig.setServerCertificateAuthority(cluster.getServerCertificateAuthority());
+
+                ManagerClusterCache.getInstance().setCredentialId(cluster.getCredentialsId());
+            }
+
             save();
 
             // should re-watch cluster
@@ -135,6 +157,25 @@ public class Devops extends AbstractDescribableImpl<Devops> {
         @DataBoundSetter
         public void setNamespace(String namespace) {
             this.namespace = namespace;
+        }
+
+        public ClusterConfig getLocalClusterConfig(String name) {
+            final String clusterName = Util.fixEmptyAndTrim(name);
+
+            Optional<ClusterConfig> clusterConfigOpt = Optional.empty();
+
+            if (clusterConfigs != null) {
+                clusterConfigOpt = clusterConfigs.stream()
+                        .filter(cc  -> cc.getName().equalsIgnoreCase(clusterName))
+                        .findFirst();
+            }
+
+            if (!clusterConfigOpt.isPresent()) {
+                LOGGER.log(Level.WARNING, "Cannot find cluster %s from both system configuration and clusterregistry");
+                return null;
+            }
+
+            return clusterConfigOpt.get();
         }
 
         /**

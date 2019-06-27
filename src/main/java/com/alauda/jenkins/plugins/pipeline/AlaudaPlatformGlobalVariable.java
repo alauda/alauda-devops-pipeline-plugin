@@ -1,5 +1,6 @@
 package com.alauda.jenkins.plugins.pipeline;
 
+import com.alauda.jenkins.plugins.ManagerClusterCache;
 import groovy.lang.Binding;
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
@@ -26,9 +27,10 @@ public class AlaudaPlatformGlobalVariable extends GlobalVariable {
         if (binding.hasVariable(getName())) {
             alaudaPlatform = binding.getVariable(getName());
         } else {
+            String managerClusterCredentialId = ManagerClusterCache.getInstance().getCredentialId();
             alaudaPlatform = cpsScript.getClass().getClassLoader()
                     .loadClass("com.alauda.jenkins.plugins.AlaudaPlatformDSL")
-                    .getConstructor(CpsScript.class).newInstance(cpsScript);
+                    .getConstructor(CpsScript.class, String.class).newInstance(cpsScript, managerClusterCredentialId);
             binding.setVariable(getName(), alaudaPlatform);
         }
 
