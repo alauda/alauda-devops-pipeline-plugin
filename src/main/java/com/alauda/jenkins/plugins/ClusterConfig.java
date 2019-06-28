@@ -186,10 +186,6 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
             return FormValidation.validateRequired(value);
         }
 
-        public FormValidation doCheckServerUrl(@QueryParameter String value) {
-            return FormValidation.validateRequired(value);
-        }
-
         public FormValidation doVerifyConnect(@QueryParameter String serverUrl,
                                               @QueryParameter String credentialsId,
                                               @QueryParameter String serverCertificateAuthority,
