@@ -122,6 +122,11 @@ pipeline {
 
 		// sonar scan
 		stage('Sonar') {
+			when {
+				expression {
+					false
+				}
+			}
 			steps {
 				script {
 					deploy.scan(
