@@ -284,10 +284,16 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
             X509TrustManager acceptAllTrustManager = new X509TrustManager() {
                 @Override
                 public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                    if(x509Certificates == null) {
+                        throw new CertificateException();
+                    }
                 }
 
                 @Override
                 public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                    if(x509Certificates == null) {
+                        throw new CertificateException();
+                    }
                 }
 
                 @Override
@@ -356,7 +362,7 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
             }
 
             // Put the certificates a key store.
-            char[] password = "password".toCharArray(); // Any password will work.
+            char[] password = ("" + System.currentTimeMillis()).toCharArray(); // Any password will work.
             KeyStore keyStore = newEmptyKeyStore(password);
             int index = 0;
             for (Certificate certificate : certificates) {
