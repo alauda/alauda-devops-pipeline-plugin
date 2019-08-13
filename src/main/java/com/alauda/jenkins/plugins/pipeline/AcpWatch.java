@@ -166,10 +166,10 @@ public class AcpWatch extends AbstractStepImpl {
                                         }
 
                                         continue;
-                                    } catch ( InterruptedException tie ) { // timeout{} block interrupted us
+                                    } catch ( InterruptedException tie) { // timeout{} block interrupted us
                                         listener.getLogger().println("\nwatch closure interrupted (timeout?)");
                                         getContext().onFailure(tie);
-                                        return null;
+                                        throw tie;
                                     } catch (Exception t) {
                                         String exceptionMsgs = t.getMessage();
                                         if (t.getCause() != null) {
