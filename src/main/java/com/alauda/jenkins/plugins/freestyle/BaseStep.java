@@ -281,7 +281,7 @@ public abstract class BaseStep extends Builder {
     // borrowed from alauda pipeline plugin
     protected Map<String, String> consolidateEnvVars(TaskListener listener,
             AbstractBuild<?, ?> build,
-            Launcher launcher) {
+            Launcher launcher) throws InterruptedException {
         // EnvVars extends TreeMap
         TreeMap<String, String> overrides = new TreeMap<String, String>();
         // merge from all potential sources
@@ -292,7 +292,7 @@ public abstract class BaseStep extends Builder {
                     listener.getLogger()
                             .println("build env vars:  " + buildEnv);
                 overrides.putAll(buildEnv);
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e) {
                 if (isVerbose())
                     e.printStackTrace(listener.getLogger());
             }
@@ -315,7 +315,7 @@ public abstract class BaseStep extends Builder {
                         "computer env vars:  " + computerEnv);
             if (computerEnv != null)
                 overrides.putAll(computerEnv);
-        } catch (IOException | InterruptedException e2) {
+        } catch (IOException e2) {
             if (isVerbose())
                 e2.printStackTrace(listener.getLogger());
         }
