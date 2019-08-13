@@ -36,7 +36,7 @@ public class LocalFileSystemClusterRegistry implements ClusterRegistryExtension 
     }
 
     @Initializer(after= InitMilestone.PLUGINS_STARTED, fatal=false)
-    public void localConfigFiles() {
+    public void localConfigFiles() throws InterruptedException {
         FilePath clusterRegistryFile = Jenkins.getInstance().getRootPath().child("clusterRegistry.json");
         final String absPath;
         try {
@@ -74,11 +74,7 @@ public class LocalFileSystemClusterRegistry implements ClusterRegistryExtension 
 
             LOGGER.info(String.format("found clusterRegistry [%d] from local file system, %s",
                     clusterRegistryMap.size(), absPath));
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
     }
