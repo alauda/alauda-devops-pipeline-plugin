@@ -84,15 +84,15 @@ pipeline {
 		}
 		stage('CI'){
 		    steps {
-			script {
-				container('java'){
-				    sh """
-					mvn clean install -U -Dmaven.test.skip=true
-				    """
-				}
+                script {
+                    container('java'){
+                        sh """
+                        mvn clean test install -U
+                        """
+                    }
 
-			    	archiveArtifacts 'target/*.hpi'
-			}
+                    archiveArtifacts 'target/*.hpi'
+                }
 		    }
 		}
 
@@ -131,7 +131,7 @@ pipeline {
 						FOLDER,
 						DEBUG,
 						OWNER,
-						SCM_FEEDBACK_ACCOUNT).startToSonar()
+						SCM_FEEDBACK_ACCOUNT).start()
 				}
 			}
 		}
