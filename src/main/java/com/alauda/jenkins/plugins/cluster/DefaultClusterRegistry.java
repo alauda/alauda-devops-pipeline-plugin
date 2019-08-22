@@ -138,6 +138,8 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
 
             LOGGER.log(Level.FINE, "Add event for ClusterRegistry: {0}", clusterName);
             clusterMap.put(clusterName, turn(cluster));
+
+            ClusterRegistryCredentials.addNamespaced(getSecretNamespaced(cluster));
         }
 
         @Override
@@ -146,6 +148,10 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
 
             LOGGER.log(Level.FINE, "Update event for ClusterRegistry: {0}", clusterName);
             clusterMap.put(clusterName, turn(newCluster));
+
+            // secret could be a different totally
+            ClusterRegistryCredentials.removeNamespaced(getSecretNamespaced(oldCluster));
+            ClusterRegistryCredentials.addNamespaced(getSecretNamespaced(newCluster));
         }
 
         @Override
@@ -154,6 +160,22 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
 
             LOGGER.log(Level.FINE, "Delete event for ClusterRegistry: {0}", clusterName);
             clusterMap.remove(cluster.getMetadata().getName());
+
+            ClusterRegistryCredentials.removeNamespaced(getSecretNamespaced(cluster));
+        }
+
+        private String getSecretNamespaced(V1alpha1Cluster cluster) {
+            try {
+                V1alpha1ObjectReference ctrl = cluster.getSpec().getAuthInfo().getController();
+
+                if("Secret".equalsIgnoreCase(ctrl.getKind())) {
+                    return ctrl.getNamespace() + "-" + ctrl.getName();
+                }
+            } catch (NullPointerException e) {
+                // just ignore this kind of exception
+            }
+
+            return null;
         }
     }
 }
