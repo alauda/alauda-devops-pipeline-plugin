@@ -131,7 +131,7 @@ pipeline {
 						FOLDER,
 						DEBUG,
 						OWNER,
-						SCM_FEEDBACK_ACCOUNT).startToSonar()
+						SCM_FEEDBACK_ACCOUNT).start()
 				}
 			}
 		}
