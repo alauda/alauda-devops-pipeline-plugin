@@ -1,5 +1,5 @@
 // https://jenkins.io/doc/book/pipeline/syntax/
-@Library('alauda-cicd') _
+@Library('alauda-cicd-debug') _
 
 // global variables for pipeline
 def GIT_BRANCH
@@ -14,6 +14,8 @@ def deployment
 def RELEASE_VERSION
 def RELEASE_BUILD
 def TEST_IMAGE
+def hpiRelease
+
 pipeline {
 	// 运行node条件
 	// 为了扩容jenkins的功能一般情况会分开一些功能到不同的node上面
@@ -27,6 +29,10 @@ pipeline {
 
 		// 不允许并行执行
 		disableConcurrentBuilds()
+	}
+
+	parameters {
+        booleanParam(name: 'DEBUG', defaultValue: false, description: 'DEBUG the pipeline')
 	}
 
 	//(optional) 环境变量
@@ -50,6 +56,7 @@ pipeline {
 		stage('Checkout') {
 			steps {
 				script {
+					DEBUG = params.DEBUG
 					// checkout code
 					def scmVars = checkout scm
 					// extract git information
@@ -57,17 +64,18 @@ pipeline {
 					env.GIT_BRANCH = scmVars.GIT_BRANCH
 					GIT_COMMIT = "${scmVars.GIT_COMMIT}"
 					GIT_BRANCH = "${scmVars.GIT_BRANCH}"
-					pom = readMavenPom file: 'pom.xml'
-					//RELEASE_VERSION = pom.properties['revision'] + pom.properties['sha1'] + pom.properties['changelist']
-					RELEASE_VERSION = pom.version
-					RELEASE_BUILD = "${RELEASE_VERSION}.${env.BUILD_NUMBER}"
-					if (GIT_BRANCH != "master") {
-						def branch = GIT_BRANCH.replace("/","-").replace("_","-")
-						RELEASE_BUILD = "${RELEASE_VERSION}.${branch}.${env.BUILD_NUMBER}"
-					}
+
+					hpiRelease = deploy.HPIRelease(scmVars)
+					hpiRelease.debug = DEBUG
+					hpiRelease.caculate()
+
+					RELEASE_VERSION = hpiRelease.releaseVersion
+					RELEASE_BUILD = RELEASE_VERSION
 
 					sh 'echo "commit=$GIT_COMMIT" > src/main/resources/debug.properties'
-					sh 'echo "build=$RELEASE_BUILD" >> src/main/resources/debug.properties'
+					sh 'echo "build=$RELEASE_VERSION" >> src/main/resources/debug.properties'
+
+					
 				}
 				container('golang'){
 					// installing golang coverage and report tools
@@ -77,7 +85,7 @@ pipeline {
 							sh "gitversion patch ${RELEASE_VERSION} > patch"
 							RELEASE_BUILD = readFile("patch").trim()
 						}
-						echo "release ${RELEASE_VERSION} - release build ${RELEASE_BUILD}"
+						echo "RELEASE_VERSION ${RELEASE_VERSION} - RELEASE_BUILD ${RELEASE_BUILD}"
 					}
 				}
 			}
@@ -96,11 +104,28 @@ pipeline {
 		    }
 		}
 
+    stage('Publish') {
+      steps{
+        script{
+          hpiRelease.deploy()
+          hpiRelease.triggerBackendIndexing(RELEASE_VERSION)
+          hpiRelease.waitUC("alauda-devops-pipeline", RELEASE_VERSION, 15)
+        }
+      }
+    }
+    stage("Trigger Jenkins") {
+      steps {
+        script {
+          hpiRelease.triggerJenkins("alauda-devops-pipeline", RELEASE_VERSION)
+        }
+      }
+    }
+
 		// after build it should start deploying
 		stage('Promoting') {
 			// limit this stage to master only
 			when {
-				expression { GIT_BRANCH == "master" }
+				expression { GIT_BRANCH == "master" && DEBUG }
 			}
 			steps {
 				script {
@@ -141,22 +166,22 @@ pipeline {
 
 	// (optional)
 	// happens at the end of the pipeline
-	post {
-		// 成功
-		success {
-			echo "Horay!"
-			script {
-				deploy.notificationSuccess(DEPLOYMENT, DINGDING_BOT, "流水线完成了", RELEASE_BUILD)
-			}
-		}
-		// 失败
-		failure {
-			// check the npm log
-			// fails lets check if it
-			script { echo "damn!" // deploy.notificationFailed(DEPLOYMENT, DINGDING_BOT, "流水线失败了", RELEASE_BUILD)
-			}
-		}
-		always { junit allowEmptyResults: true, testResults: "**/target/surefire-reports/**/*.xml" }
-	}
+	// post {
+	// 	// 成功
+	// 	success {
+	// 		echo "Horay!"
+	// 		script {
+	// 			deploy.notificationSuccess(DEPLOYMENT, DINGDING_BOT, "流水线完成了", RELEASE_BUILD)
+	// 		}
+	// 	}
+	// 	// 失败
+	// 	failure {
+	// 		// check the npm log
+	// 		// fails lets check if it
+	// 		script { echo "damn!" // deploy.notificationFailed(DEPLOYMENT, DINGDING_BOT, "流水线失败了", RELEASE_BUILD)
+	// 		}
+	// 	}
+	// 	always { junit allowEmptyResults: true, testResults: "**/target/surefire-reports/**/*.xml" }
+	// }
 }
 

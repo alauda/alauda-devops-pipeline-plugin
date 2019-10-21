@@ -11,7 +11,7 @@
 
     <groupId>com.alauda.jenkins.plugins</groupId>
     <artifactId>alauda-devops-pipeline</artifactId>
-    <version>2.0.3-SNAPSHOT</version>
+    <version>2.4.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <properties>
@@ -106,7 +106,19 @@
         <name>Alauda</name>
         <url>http://www.alauda.io</url>
     </organization>
-
+    <distributionManagement>
+        <repository>
+            <id>nexus.acp.alauda.cn</id>
+            <url>https://nexus.acp.alauda.cn/repository/maven-releases/</url>
+            
+        </repository>
+        <snapshotRepository>  
+            <id>nexus.acp.alauda.cn</id>
+            <url>
+                https://nexus.acp.alauda.cn/repository/maven-snapshots/
+            </url>
+        </snapshotRepository>  
+    </distributionManagement>
     <dependencies>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
