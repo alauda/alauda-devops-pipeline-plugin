@@ -1,5 +1,5 @@
 // https://jenkins.io/doc/book/pipeline/syntax/
-@Library('alauda-cicd-debug') _
+@Library('alauda-cicd') _
 
 // global variables for pipeline
 def GIT_BRANCH
@@ -32,7 +32,7 @@ pipeline {
 	}
 
 	parameters {
-        booleanParam(name: 'DEBUG', defaultValue: false, description: 'DEBUG the pipeline')
+				booleanParam(name: 'DEBUG', defaultValue: false, description: 'DEBUG the pipeline')
 	}
 
 	//(optional) 环境变量
@@ -90,42 +90,47 @@ pipeline {
 				}
 			}
 		}
-		stage('CI'){
-		    steps {
-			script {
-				container('java'){
-				    sh """
-					mvn clean install -U -Dmaven.test.skip=true
-				    """
-				}
 
-			    	archiveArtifacts 'target/*.hpi'
+		stage('CI'){
+			steps {
+				script {
+					container('java'){
+							sh """
+						mvn clean install -U -Dmaven.test.skip=true
+							"""
+					}
+
+							archiveArtifacts 'target/*.hpi'
+				}
 			}
-		    }
 		}
 
-    stage('Publish') {
-      steps{
-        script{
-          hpiRelease.deploy()
-          hpiRelease.triggerBackendIndexing(RELEASE_VERSION)
-          hpiRelease.waitUC("alauda-devops-pipeline", RELEASE_VERSION, 15)
-        }
-      }
-    }
-    stage("Trigger Jenkins") {
-      steps {
-        script {
-          hpiRelease.triggerJenkins("alauda-devops-pipeline", RELEASE_VERSION)
-        }
-      }
-    }
+		stage("Code Scan"){
+			steps{
+				container("tools"){
+					script{
+						deploy.scan().startACPSonar(null, "-D sonar.projectVersion=${RELEASE_VERSION}")
+					}
+				}
+			}
+		}
 
+		stage('Deploy to Nexus') {
+			steps{
+				script{
+					hpiRelease.deploy()
+					if(hpiRelease.deployToUC){
+						hpiRelease.triggerBackendIndexing(RELEASE_VERSION)
+						hpiRelease.waitUC("alauda-devops-pipeline", RELEASE_VERSION, 15)
+					}
+				}
+			}
+		}
 		// after build it should start deploying
-		stage('Promoting') {
-			// limit this stage to master only
+		stage('Tag Git') {
+			// limit this stage to master or release only
 			when {
-				expression { GIT_BRANCH == "master" && DEBUG }
+				expression { hpiRelease.shouldTag }
 			}
 			steps {
 				script {
@@ -135,30 +140,23 @@ pipeline {
 						sh """
 							git config --global user.email "alaudabot@alauda.io"
 							git config --global user.name "Alauda Bot"
-						    """
+								"""
 						def repo = "https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${OWNER}/${REPOSITORY}.git"
 						sh "git fetch --tags ${repo}" // retrieve all tags
-						sh("git tag -a ${RELEASE_BUILD} -m 'auto add release tag by jenkins'")
+						sh("git tag -a ${hpiRelease.tag} -m 'auto add release tag by jenkins'")
 						sh("git push ${repo} --tags")
 					}
 				}
 			}
 		}
 
-		// sonar scan
-		stage('Sonar') {
+		stage("Delivery Jenkins") {
+			when {
+				expression { hpiRelease.deliveryJenkins }
+			}
 			steps {
-				script {
-					container('tools') {
-						deploy.scan(
-								REPOSITORY,
-								GIT_BRANCH,
-								SONARQUBE_SCM_CREDENTIALS,
-								FOLDER,
-								DEBUG,
-								OWNER,
-								SCM_FEEDBACK_ACCOUNT).start()
-					}
+			script {
+					hpiRelease.triggerJenkins("alauda-devops-pipeline", "com.alauda.jenkins.plugins;${RELEASE_VERSION}")
 				}
 			}
 		}
@@ -166,22 +164,22 @@ pipeline {
 
 	// (optional)
 	// happens at the end of the pipeline
-	// post {
-	// 	// 成功
-	// 	success {
-	// 		echo "Horay!"
-	// 		script {
-	// 			deploy.notificationSuccess(DEPLOYMENT, DINGDING_BOT, "流水线完成了", RELEASE_BUILD)
-	// 		}
-	// 	}
-	// 	// 失败
-	// 	failure {
-	// 		// check the npm log
-	// 		// fails lets check if it
-	// 		script { echo "damn!" // deploy.notificationFailed(DEPLOYMENT, DINGDING_BOT, "流水线失败了", RELEASE_BUILD)
-	// 		}
-	// 	}
-	// 	always { junit allowEmptyResults: true, testResults: "**/target/surefire-reports/**/*.xml" }
-	// }
+	post {
+		// 成功
+		success {
+			echo "Horay!"
+			script {
+				deploy.notificationSuccess(DEPLOYMENT, DINGDING_BOT, "流水线完成了", RELEASE_BUILD)
+			}
+		}
+		// 失败
+		failure {
+			// check the npm log
+			// fails lets check if it
+			script { echo "damn!" // deploy.notificationFailed(DEPLOYMENT, DINGDING_BOT, "流水线失败了", RELEASE_BUILD)
+			}
+		}
+		always { junit allowEmptyResults: true, testResults: "**/target/surefire-reports/**/*.xml" }
+	}
 }
 
