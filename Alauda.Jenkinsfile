@@ -12,7 +12,6 @@ def code_data
 def DEBUG = false
 def deployment
 def RELEASE_VERSION
-def RELEASE_BUILD
 def TEST_IMAGE
 def hpiRelease
 
@@ -70,23 +69,10 @@ pipeline {
 					hpiRelease.caculate()
 
 					RELEASE_VERSION = hpiRelease.releaseVersion
-					RELEASE_BUILD = RELEASE_VERSION
 
 					sh 'echo "commit=$GIT_COMMIT" > src/main/resources/debug.properties'
 					sh 'echo "build=$RELEASE_VERSION" >> src/main/resources/debug.properties'
-
-					
-				}
-				container('golang'){
-					// installing golang coverage and report tools
-					sh "go get -u github.com/alauda/gitversion"
-					script {
-						if (GIT_BRANCH == "master") {
-							sh "gitversion patch ${RELEASE_VERSION} > patch"
-							RELEASE_BUILD = readFile("patch").trim()
-						}
-						echo "RELEASE_VERSION ${RELEASE_VERSION} - RELEASE_BUILD ${RELEASE_BUILD}"
-					}
+					echo "RELEASE_VERSION ${RELEASE_VERSION}"
 				}
 			}
 		}
@@ -169,14 +155,13 @@ pipeline {
 		success {
 			echo "Horay!"
 			script {
-				deploy.notificationSuccess(DEPLOYMENT, DINGDING_BOT, "流水线完成了", RELEASE_BUILD)
+				deploy.notificationSuccess(DEPLOYMENT, DINGDING_BOT, "流水线完成了", RELEASE_VERSION)
 			}
 		}
 		// 失败
 		failure {
-			// check the npm log
-			// fails lets check if it
-			script { echo "damn!" // deploy.notificationFailed(DEPLOYMENT, DINGDING_BOT, "流水线失败了", RELEASE_BUILD)
+			script{
+			 deploy.notificationFailed(DEPLOYMENT, DINGDING_BOT, "流水线失败了", RELEASE_VERSION)
 			}
 		}
 		always { junit allowEmptyResults: true, testResults: "**/target/surefire-reports/**/*.xml" }
