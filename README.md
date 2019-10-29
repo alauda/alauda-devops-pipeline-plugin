@@ -147,7 +147,7 @@ alaudaDevops.withCluster( 'https://10.13.137.207:8443', 'CO8wPaLV2M2yC_jrm00hCma
     }
 }
 ```
-
+ 
 ### Centralizing Cluster Configuration
 Now let's simplify the first example by moving host, port, token and project information out of the script and into the
 [Jenkins cluster configuration](#configuring-an-alauda-cluster). A single logical name (e.g. "mycluster")
