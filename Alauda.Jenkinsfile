@@ -14,6 +14,8 @@ def deployment
 def RELEASE_VERSION
 def RELEASE_BUILD
 def TEST_IMAGE
+def hpiRelease
+
 pipeline {
 	// 运行node条件
 	// 为了扩容jenkins的功能一般情况会分开一些功能到不同的node上面
@@ -27,6 +29,10 @@ pipeline {
 
 		// 不允许并行执行
 		disableConcurrentBuilds()
+	}
+
+	parameters {
+				booleanParam(name: 'DEBUG', defaultValue: false, description: 'DEBUG the pipeline')
 	}
 
 	//(optional) 环境变量
@@ -50,6 +56,7 @@ pipeline {
 		stage('Checkout') {
 			steps {
 				script {
+					DEBUG = params.DEBUG
 					// checkout code
 					def scmVars = checkout scm
 					// extract git information
@@ -57,17 +64,18 @@ pipeline {
 					env.GIT_BRANCH = scmVars.GIT_BRANCH
 					GIT_COMMIT = "${scmVars.GIT_COMMIT}"
 					GIT_BRANCH = "${scmVars.GIT_BRANCH}"
-					pom = readMavenPom file: 'pom.xml'
-					//RELEASE_VERSION = pom.properties['revision'] + pom.properties['sha1'] + pom.properties['changelist']
-					RELEASE_VERSION = pom.version
-					RELEASE_BUILD = "${RELEASE_VERSION}.${env.BUILD_NUMBER}"
-					if (GIT_BRANCH != "master") {
-						def branch = GIT_BRANCH.replace("/","-").replace("_","-")
-						RELEASE_BUILD = "${RELEASE_VERSION}.${branch}.${env.BUILD_NUMBER}"
-					}
+
+					hpiRelease = deploy.HPIRelease(scmVars)
+					hpiRelease.debug = DEBUG
+					hpiRelease.caculate()
+
+					RELEASE_VERSION = hpiRelease.releaseVersion
+					RELEASE_BUILD = RELEASE_VERSION
 
 					sh 'echo "commit=$GIT_COMMIT" > src/main/resources/debug.properties'
-					sh 'echo "build=$RELEASE_BUILD" >> src/main/resources/debug.properties'
+					sh 'echo "build=$RELEASE_VERSION" >> src/main/resources/debug.properties'
+
+					
 				}
 				container('golang'){
 					// installing golang coverage and report tools
@@ -77,30 +85,52 @@ pipeline {
 							sh "gitversion patch ${RELEASE_VERSION} > patch"
 							RELEASE_BUILD = readFile("patch").trim()
 						}
-						echo "release ${RELEASE_VERSION} - release build ${RELEASE_BUILD}"
+						echo "RELEASE_VERSION ${RELEASE_VERSION} - RELEASE_BUILD ${RELEASE_BUILD}"
 					}
 				}
 			}
 		}
-		stage('CI'){
-		    steps {
-			script {
-				container('java'){
-				    sh """
-					mvn clean install -U -Dmaven.test.skip=true
-				    """
-				}
 
-			    	archiveArtifacts 'target/*.hpi'
+		stage('CI'){
+			steps {
+				script {
+					container('java'){
+							sh """
+						mvn clean install -U -Dmaven.test.skip=true
+							"""
+					}
+
+							archiveArtifacts 'target/*.hpi'
+				}
 			}
-		    }
 		}
 
+		stage("Code Scan"){
+			steps{
+				container("tools"){
+					script{
+						deploy.scan().startACPSonar(null, "-D sonar.projectVersion=${RELEASE_VERSION}")
+					}
+				}
+			}
+		}
+
+		stage('Deploy to Nexus') {
+			steps{
+				script{
+					hpiRelease.deploy()
+					if(hpiRelease.deployToUC){
+						hpiRelease.triggerBackendIndexing(RELEASE_VERSION)
+						hpiRelease.waitUC("alauda-devops-pipeline", RELEASE_VERSION, 15)
+					}
+				}
+			}
+		}
 		// after build it should start deploying
-		stage('Promoting') {
-			// limit this stage to master only
+		stage('Tag Git') {
+			// limit this stage to master or release only
 			when {
-				expression { GIT_BRANCH == "master" }
+				expression { hpiRelease.shouldTag }
 			}
 			steps {
 				script {
@@ -110,30 +140,23 @@ pipeline {
 						sh """
 							git config --global user.email "alaudabot@alauda.io"
 							git config --global user.name "Alauda Bot"
-						    """
+								"""
 						def repo = "https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${OWNER}/${REPOSITORY}.git"
 						sh "git fetch --tags ${repo}" // retrieve all tags
-						sh("git tag -a ${RELEASE_BUILD} -m 'auto add release tag by jenkins'")
+						sh("git tag -a ${hpiRelease.tag} -m 'auto add release tag by jenkins'")
 						sh("git push ${repo} --tags")
 					}
 				}
 			}
 		}
 
-		// sonar scan
-		stage('Sonar') {
+		stage("Delivery Jenkins") {
+			when {
+				expression { hpiRelease.deliveryJenkins }
+			}
 			steps {
-				script {
-					container('tools') {
-						deploy.scan(
-								REPOSITORY,
-								GIT_BRANCH,
-								SONARQUBE_SCM_CREDENTIALS,
-								FOLDER,
-								DEBUG,
-								OWNER,
-								SCM_FEEDBACK_ACCOUNT).start()
-					}
+			script {
+					hpiRelease.triggerJenkins("alauda-devops-pipeline", "com.alauda.jenkins.plugins;${RELEASE_VERSION}")
 				}
 			}
 		}
