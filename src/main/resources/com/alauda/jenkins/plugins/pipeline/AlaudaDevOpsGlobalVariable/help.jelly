@@ -65,10 +65,18 @@
             </p>
             <ul>
                 <li>
-                    <b>clusterName</b> - The name of an AlaudaDevops clusterName defined in the global configuration OR a String
+                    <b>clusterName</b> - The name of an Alauda DevOps clusterName defined in the global configuration or cluster
+                    registry in the kubernetes or a String
                     literal URL (e.g. "https://10.13.137.186:8443"). The special protocol "insecure://" may also be used if https is
                     desired but TLS certificate verification should be disabled.
                     <br />
+                    <br />
+                    Please pay attention about the look up order:
+                    1. Jenkins Global configuration
+                    2. cluster's name in kubernetes, you can find it by command line: 'kubectl get cluster --all-namespaces'
+                    3. Take the name as a literal URL
+                    <br />
+                    You can get more log details by adding 'com.alauda.jenkins.plugins' into the Jenkins Logger records.
                     <br />
                     Use of the Jenkins global configuration method is highly encouraged as it will insulate your pipeline
                     scripts from changes to your server (e.g. a change in its IP address). It will also allow

@@ -171,7 +171,7 @@ public class Devops extends AbstractDescribableImpl<Devops> {
             }
 
             if (!clusterConfigOpt.isPresent()) {
-                LOGGER.log(Level.WARNING, "Cannot find cluster %s from both system configuration and clusterregistry");
+                LOGGER.log(Level.WARNING, "Cannot find cluster {0} from both system configuration and cluster registry");
                 return null;
             }
 
@@ -204,7 +204,7 @@ public class Devops extends AbstractDescribableImpl<Devops> {
             }
 
             if (!clusterConfigOpt.isPresent()) {
-                LOGGER.log(Level.WARNING, "Cannot find cluster %s from both system configuration and clusterregistry");
+                LOGGER.log(Level.WARNING, "Cannot find cluster {0} from both system configuration and cluster registry", name);
                 return null;
             }
 
