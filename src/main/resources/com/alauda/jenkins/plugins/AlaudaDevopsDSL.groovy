@@ -12,8 +12,16 @@ import hudson.FilePath
 import hudson.Util
 import hudson.security.ACL
 import jenkins.model.Jenkins
+import org.dom4j.Document
+import org.dom4j.DocumentException
+import org.dom4j.DocumentHelper
+import org.dom4j.Element
+import org.dom4j.Node
+import org.dom4j.io.OutputFormat
+import org.dom4j.io.XMLWriter
 import org.jenkinsci.plugins.plaincredentials.StringCredentials
 
+import java.nio.channels.FileChannel
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -24,7 +32,7 @@ import org.jenkinsci.plugins.workflow.cps.CpsScript
 class AlaudaDevopsDSL implements Serializable {
 
     static final Logger LOGGER = Logger.getLogger(AlaudaDevopsDSL.class.getName());
-    private int logLevel = 0; // Modified by calls to alaudaDevops.logLevel
+    private int logLevel = 9; // Modified by calls to alaudaDevops.logLevel
     private CpsScript script
     private transient Devops.DescriptorImpl config = new Devops.DescriptorImpl();
     // Load the global config for Devops DSL
@@ -136,9 +144,9 @@ class AlaudaDevopsDSL implements Serializable {
             if (this.@credentialsId != null) {
                 List<StringCredentials> stringCredentials = CredentialsProvider.lookupCredentials(StringCredentials.class,
                         Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList());
-                if(stringCredentials != null) {
-                    for(StringCredentials cred : stringCredentials) {
-                        if(credentialsId.equals(cred.getId())) {
+                if (stringCredentials != null) {
+                    for (StringCredentials cred : stringCredentials) {
+                        if (credentialsId.equals(cred.getId())) {
                             return cred.getSecret().getPlainText();
                         }
                     }
@@ -304,6 +312,115 @@ class AlaudaDevopsDSL implements Serializable {
     }
 
     /**
+     * @param path
+     * @return Settings
+     */
+    public Settings mavenSettings(String path) {
+        Settings result = new Settings();
+
+        result.read(path);
+
+        return result;
+    }
+
+    /**
+     *
+     * @param path
+     * @return
+     */
+    public Settings mavenPom(String path) {
+        Pom result = new Pom();
+
+        result.read(path);
+        return result;
+    }
+
+    /**
+     *
+     * @param mavenVersion
+     * @return
+     */
+    public String getMavenHome(String mavenVersion) {
+
+        String result = "";
+
+        String[] mavenVersionArray = mavenVersion.split("\n");
+        for (String line : mavenVersionArray) {
+            if (line.indexOf("Maven home") != -1) {
+                result = line.split(":")[1];
+                return result;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     *
+     * @param mavenHome
+     * @return
+     */
+    public String copyMavenHome(String mavenHome) {
+        String result = "/opt/apache-maven-" + System.currentTimeMillis();
+        copyPath(mavenHome, result);
+        return result;
+    }
+
+    /**
+     *
+     * @param mavenHome
+     * @return
+     */
+    public String copyPath(String oldPath, String newPath) {
+
+        File oldDir = new File(oldPath);
+        File newDir = new File(newPath);
+
+        try {
+            copyFile(oldDir, newDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return newPath;
+    }
+
+    /**
+     *
+     * @param oldFile
+     * @param newFile
+     * @throws IOException
+     */
+    public void copyFile(File oldFile, File newFile) throws IOException {
+        if (oldFile.isDirectory()) {
+            if (!newFile.exists()) {
+                if (!newFile.mkdir()) {
+                    throw new IOException();
+                }
+            }
+            for (File oldSonFile : oldFile.listFiles()) {
+                File newSonFile = new File(newFile.getPath() + "/" + oldSonFile.getName());
+
+                copyFile(oldSonFile, newSonFile);
+            }
+        } else if (oldFile.isFile()) {
+            //copy file
+            FileChannel input = null;
+            FileChannel output = null;
+            try {
+                input = new FileInputStream(oldFile).getChannel();
+                output = new FileOutputStream(newFile).getChannel();
+                output.transferFrom(input, 0, input.size());
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                input.close();
+                output.close();
+            }
+        }
+    }
+
+
+    /**
      * @param name The name can be a literal URL for the clusterName or,
      *          preferably, a Jenkins specific
      *          name of a clusterName configured in the global Devops configuration. The name can also
@@ -391,11 +508,9 @@ class AlaudaDevopsDSL implements Serializable {
      * usage example:
      *
      * <pre>
-     * withBindingInProjectSonarEnv("test-namespace", "test-code-quality-binding") {
-     *     sh "echo \"SonarQube Server URL is $SONAR_SERVER_URL\""
+     * withBindingInProjectSonarEnv("test-namespace", "test-code-quality-binding") {*     sh "echo \"SonarQube Server URL is $SONAR_SERVER_URL\""
      *     sh "echo \"SonarQube Server token is $SONAR_TOKEN\""
-     * }
-     * </pre>
+     *}* </pre>
      *
      * @param oproject namespace of code quality binding
      * @param obindingName name of code quality binding
@@ -1756,4 +1871,366 @@ class AlaudaDevopsDSL implements Serializable {
         }
     }
 
+    /**
+     *
+     */
+    public class Settings implements Serializable {
+        private String settings;
+
+        public String getSettings() {
+            return settings;
+        }
+
+        public void setSettings(String settings) {
+            this.settings = settings;
+        }
+
+        /**
+         *
+         * @param path
+         * @return
+         */
+        public Settings read(String path) {
+            StringBuilder sb = new StringBuilder();
+
+            BufferedReader br = null;
+            try {
+                FileReader reader = new FileReader(path);
+                br = new BufferedReader(reader);
+
+                String line;
+
+                for (line = br.readLine(); line != null; line = br.readLine()) {
+
+                    sb.append(line + "\n");
+
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                br.close();
+            }
+
+            this.setSettings(sb.toString());
+
+            return this
+        }
+
+        /**
+         * @param profileId
+         * @param repoId
+         * @param url
+         * @return
+         */
+        public Settings addProfile(String profileId, String repoId, String url) throws Exception {
+
+            if (profileId == null || repoId == null || url == null) {
+                throw new Exception("argument must not null.");
+            }
+
+            try {
+                Document document = DocumentHelper.parseText(this.settings);
+                Element rootElement = document.getRootElement();
+                boolean isNeedCreate = true;
+                Element profile = null;
+                Element profiles = rootElement.element("profiles");
+                if (profiles == null) {
+                    rootElement.addElement("profiles");
+                } else {
+                    for (Iterator<Node> iter = profiles.elementIterator("profile"); iter.hasNext();) {
+                        profile = iter.next();
+                        if (profileId.equals(profile.element("id").getText())) {
+                            //如果存在profile，不创建，否则创建
+                            isNeedCreate = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (isNeedCreate) {
+                    profile = rootElement.element("profiles").addElement("profile");
+                    profile.addElement("id").addText(profileId);
+                }
+
+                Element repositories = profile.element("repositories");
+                Element repo = null;
+                isNeedCreate = true;
+                if (repositories == null) {
+                    repositories = profile.addElement("repositories");
+                } else {
+
+                    for (Iterator<Element> iterator = repositories.elementIterator("repository"); iterator.hasNext();) {
+                        repo = iterator.next();
+                        if (repoId.equals(repo.element("id").getText())) {
+                            Element urlElement = repo.element("url");
+                            if (urlElement != null) {
+                                urlElement.setText(url);
+                            } else {
+                                repo.addElement("url").setText(url);
+                            }
+                            isNeedCreate = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (isNeedCreate) {
+                    Element repository = repositories.addElement("repository");
+                    repository.addElement("id").addText(repoId);
+                    repository.addElement("url").addText(url);
+                    repository.addElement("layout").addText("default");
+
+                }
+
+                //create active profiles
+                Element activeProfiles = rootElement.element("activeProfiles");
+                isNeedCreate = true
+                if (activeProfiles == null) {
+                    activeProfiles = rootElement.addElement("activeProfiles");
+                } else {
+                    for (Iterator<Element> iterator = activeProfiles.elementIterator("activeProfile"); iterator.hasNext();) {
+                        Element elem = iterator.next();
+                        if (profileId.equals(elem.getText())) {
+                            isNeedCreate = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (isNeedCreate) {
+                    activeProfiles.addElement("activeProfile").setText(profileId);
+                }
+
+                this.setSettings(document.asXML());
+
+            } catch (DocumentException e) {
+                e.printStackTrace();
+            }
+
+            LOGGER.log(Level.INFO, "addProfile settings is:" + this.settings);
+            return this;
+        }
+
+        /**
+         * @param id
+         * @param username
+         * @param password
+         * @return
+         */
+        public Settings addServer(String id, String username, String password) throws Exception {
+
+            if (id == null || username == null || password == null) {
+                throw new Exception("argument must not null");
+            }
+
+            try {
+                Document document = DocumentHelper.parseText(this.settings);
+                Element root = document.getRootElement();
+
+                //检测servers是否存在
+                Element server = null;
+                Element servers = root.element("servers");
+                boolean isNeedCreate = true;
+                if (servers == null) {
+                    servers = root.addElement("servers");
+                } else {
+                    for (Iterator<Element> iter = servers.elementIterator("server"); iter.hasNext();) {
+                        server = iter.next();
+                        if (id.equals(server.element("id").getText())) {
+                            Element usernameElement = server.element("username");
+                            if (usernameElement != null) {
+                                usernameElement.setText(username);
+                            } else {
+                                server.addElement("username").setText(username);
+                            }
+                            Element passwordElement = server.element("password");
+                            if (passwordElement != null) {
+                                passwordElement.setText(password);
+                            } else {
+                                server.addElement("password").setText(password);
+                            }
+
+                            isNeedCreate = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (isNeedCreate) {
+                    server = servers.addElement("server");
+                    server.addElement("id").setText(id);
+                    server.addElement("username").setText(username);
+                    server.addElement("password").setText(password);
+                }
+
+                this.setSettings(document.asXML());
+
+            } catch (DocumentException e) {
+                e.printStackTrace();
+            }
+            return this;
+        }
+
+        /**
+         * @param path
+         * @return
+         */
+        public boolean write(String path) {
+
+            boolean result = true;
+            File file = new File(path);
+
+            XMLWriter xmlWriter = null;
+            try {
+
+                OutputFormat XML_FORMAT = new OutputFormat();
+                // 设置换行 为false时输出的xml不分行
+                XML_FORMAT.setNewlines(true);
+                // 生成缩进
+                XML_FORMAT.setIndent(true);
+
+                xmlWriter = new XMLWriter(new FileOutputStream(file), XML_FORMAT);
+                xmlWriter.write(DocumentHelper.parseText(this.settings));
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                result = false;
+            } finally {
+                xmlWriter.close()
+            }
+            return result;
+        }
+    }
+
+    /**
+     *
+     */
+    public class Pom {
+        private String pom;
+
+        public String getPom() {
+            return pom;
+        }
+
+        public void setPom(String pom) {
+            this.pom = pom;
+        }
+
+        /**
+         *
+         * @param path
+         * @return
+         */
+        public Pom read(path) {
+
+            StringBuilder sb = new StringBuilder();
+
+            BufferedReader br = null;
+
+            try {
+                FileReader reader = new FileReader(path);
+                br = new BufferedReader(reader);
+
+                String line;
+                for (line = br.readLine(); line != null; line = br.readLine()) {
+                    sb.append(str + "\n");
+                }
+
+            } catch (IOException e) {
+                e.getStackTrace();
+            } finally {
+                br.close();
+            }
+
+            result.setPom(sb.toString());
+
+            return this;
+        }
+
+
+        /**
+         * @param id
+         * @param url
+         * @return
+         * @throws Exception
+         */
+        public Pom addDistribution(String id, String url) throws Exception {
+
+            if (id == null || url == null) {
+                throw new Exception("argument must not null.");
+            }
+
+            try {
+                Document document = DocumentHelper.parseText(this.pom);
+                Element rootElement = document.getRootElement();
+                boolean isNeedCreate = true;
+
+                Element distributionManagement = rootElement.element("distributionManagement");
+                Element repo = null;
+                if (distributionManagement == null) {
+                    distributionManagement = rootElement.addElement("distributionManagement");
+                } else {
+
+                    for (Iterator<Element> iterator = distributionManagement.elementIterator("repository"); iterator.hasNext();) {
+                        repo = iterator.next();
+                        if (id.equals(repo.element("id").getText())) {
+                            Element urlElement = repo.element("url");
+                            if (urlElement != null) {
+                                urlElement.setText(url);
+                            } else {
+                                repo.addElement("url").setText(url);
+                            }
+                            isNeedCreate = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (isNeedCreate) {
+                    Element repository = DocumentHelper.createElement("repository");
+                    repository.addElement("id").addText(id);
+                    repository.addElement("url").addText(url);
+                    repository.addElement("layout").addText("default");
+
+                    distributionManagement.add(repository);
+                }
+
+                this.setPom(document.asXML());
+
+            } catch (DocumentException e) {
+                e.printStackTrace();
+            }
+            return this;
+        }
+
+        /**
+         * @param path
+         * @return
+         */
+        public boolean write(String path) {
+
+            boolean result = true;
+            File file = new File(path);
+
+            XMLWriter xmlWriter = null;
+            try {
+
+                OutputFormat XML_FORMAT = new OutputFormat();
+                // 设置换行 为false时输出的xml不分行
+                XML_FORMAT.setNewlines(true);
+                // 生成缩进
+                XML_FORMAT.setIndent(true);
+
+                xmlWriter = new XMLWriter(new FileOutputStream(file), XML_FORMAT);
+                xmlWriter.write(DocumentHelper.parseText(this.settings));
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                result = false;
+            } finally {
+                xmlWriter.close()
+            }
+            return result;
+        }
+    }
 }
