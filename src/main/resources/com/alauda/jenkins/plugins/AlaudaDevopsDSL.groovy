@@ -340,6 +340,7 @@ class AlaudaDevopsDSL implements Serializable {
      * @param mavenVersion
      * @return
      */
+    @Whitelisted
     public String getMavenHome(String mavenVersion) {
 
         String result = "";
