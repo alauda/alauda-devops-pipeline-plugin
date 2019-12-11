@@ -30,8 +30,3 @@ target
 work
 
 scripts/env.sh
-
-settings.xml
-
-settings-temp.xml
-test.groovy

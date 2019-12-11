@@ -12,6 +12,10 @@ import hudson.FilePath
 import hudson.Util
 import hudson.security.ACL
 import jenkins.model.Jenkins
+import org.apache.commons.io.Charsets
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.IOUtils
+import org.apache.commons.lang.CharSet
 import org.dom4j.Document
 import org.dom4j.DocumentException
 import org.dom4j.DocumentHelper
@@ -32,7 +36,7 @@ import org.jenkinsci.plugins.workflow.cps.CpsScript
 class AlaudaDevopsDSL implements Serializable {
 
     static final Logger LOGGER = Logger.getLogger(AlaudaDevopsDSL.class.getName());
-    private int logLevel = 9; // Modified by calls to alaudaDevops.logLevel
+    private int logLevel = 0; // Modified by calls to alaudaDevops.logLevel
     private CpsScript script
     private transient Devops.DescriptorImpl config = new Devops.DescriptorImpl();
     // Load the global config for Devops DSL
@@ -328,7 +332,7 @@ class AlaudaDevopsDSL implements Serializable {
      * @param path
      * @return
      */
-    public Settings mavenPom(String path) {
+    public Pom mavenPom(String path) {
         Pom result = new Pom();
 
         result.read(path);
@@ -1892,27 +1896,12 @@ class AlaudaDevopsDSL implements Serializable {
          * @return
          */
         public Settings read(String path) {
-            StringBuilder sb = new StringBuilder();
 
-            BufferedReader br = null;
-            try {
-                FileReader reader = new FileReader(path);
-                br = new BufferedReader(reader);
+            File file = new File(path);
 
-                String line;
+            String result = FileUtils.readFileToString(file, Charsets.toCharset("UTF-8"));
 
-                for (line = br.readLine(); line != null; line = br.readLine()) {
-
-                    sb.append(line + "\n");
-
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                br.close();
-            }
-
-            this.setSettings(sb.toString());
+            this.setSettings(result);
 
             return this
         }
@@ -1923,10 +1912,10 @@ class AlaudaDevopsDSL implements Serializable {
          * @param url
          * @return
          */
-        public Settings addProfile(String profileId, String repoId, String url) throws Exception {
+        public Settings addProfile(String profileId, String repoId, String url) throws IllegalArgumentException {
 
             if (profileId == null || repoId == null || url == null) {
-                throw new Exception("argument must not null.");
+                throw new IllegalArgumentException("argument must not null.");
             }
 
             try {
@@ -2008,7 +1997,7 @@ class AlaudaDevopsDSL implements Serializable {
                 e.printStackTrace();
             }
 
-            LOGGER.log(Level.INFO, "addProfile settings is:" + this.settings);
+            LOGGER.log(Level.ALL, "addProfile settings is:" + this.settings);
             return this;
         }
 
@@ -2018,10 +2007,10 @@ class AlaudaDevopsDSL implements Serializable {
          * @param password
          * @return
          */
-        public Settings addServer(String id, String username, String password) throws Exception {
+        public Settings addServer(String id, String username, String password) throws IllegalArgumentException {
 
             if (id == null || username == null || password == null) {
-                throw new Exception("argument must not null");
+                throw new IllegalArgumentException("argument must not null");
             }
 
             try {
@@ -2155,10 +2144,10 @@ class AlaudaDevopsDSL implements Serializable {
          * @return
          * @throws Exception
          */
-        public Pom addDistribution(String id, String url) throws Exception {
+        public Pom addDistribution(String id, String url) throws IllegalArgumentException {
 
             if (id == null || url == null) {
-                throw new Exception("argument must not null.");
+                throw new IllegalArgumentException("argument must not null.");
             }
 
             try {
