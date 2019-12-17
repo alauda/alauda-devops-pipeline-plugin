@@ -130,6 +130,62 @@
             </p>
         </dd>
         <dt>
+            <code id="alaudaDevops_convertJsonArrsyToStringArray">alaudaDevops.convertJsonArrsyToStringArray(jsonArray:String):String[]</code>
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                <code>
+                    def jsonString='["iconid1","iconid2"]'<br />
+                    def dependArtifactRegistries=alaudaDevops.convertJsonArrsyToStringArray(jsonString)<br />
+                </code>
+            </p>
+            <p>
+                Returns String array from json.
+            </p>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_mavenSettings">alaudaDevops.mavenSettings(settings:String):Settings</code>
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                <code>
+                    def settingsString="&lt;settings&gt;&lt;/settings&gt;"<br />
+                    def settings = alaudaDevops.mavenSettings(settingsString)<br />
+                </code>
+            </p>
+            <p>
+                Returns Settings object.
+            </p>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_mavenPom">alaudaDevops.mavenPom(pom:String):Pom</code>
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                <code>
+                    def pomString="&lt;pom&gt;&lt;/pom&gt;"<br />
+                    def pom =alaudaDevops.mavenPom(pomString)<br />
+                </code>
+            </p>
+            <p>
+                Returns Pom object.
+            </p>
+        </dd>
+        <dt>
+            <code id="alaudaDevops_getMavenHome">alaudaDevops.getMavenHome(mavenVersion:String):String</code>
+        </dt>
+        <dd>
+            <p style="margin-left: 1em; color:#657383;">
+                <code>
+                    def mavenVersion = sh encoding: 'UTF-8', label: '', returnStdout: true, script: 'mvn --version'<br />
+                    def mavenHome = alaudaDevops.getMavenHome(mavenVersion)<br />
+                </code>
+            </p>
+            <p>
+                Returns maven home from maven version output.
+            </p>
+        </dd>
+        <dt>
             <code id="alaudaDevops_doAs">alaudaDevops.doAs(credential:String):Object {…}</code>
         </dt>
         <dd>
