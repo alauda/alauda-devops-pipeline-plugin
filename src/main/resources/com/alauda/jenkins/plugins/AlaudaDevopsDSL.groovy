@@ -687,7 +687,7 @@ class AlaudaDevopsDSL implements Serializable {
         // the context if it exists (traditional behavior)
         // consistent namespace set: we make 1 invocation of the verb where we don't use the current project stored in
         // the context and let oc and the obj json sort out where objects go
-        // inconsistent namespaces: we make an invocation of the verb for each object where will will not override the 
+        // inconsistent namespaces: we make an invocation of the verb for each object where will will not override the
         // project if it is set but use the current project if it is not set
         String namespace = null;
         boolean found = false;
@@ -701,7 +701,7 @@ class AlaudaDevopsDSL implements Serializable {
                     HashMap obj2MapMetadata = obj2Map.get("metadata");
                     if (obj2MapMetadata != null) {
                         Object ns = obj2MapMetadata.get("namespace");
-                        // first time through the list, no 
+                        // first time through the list, no
                         // consistency check
                         if (!found) {
                             found = true;
@@ -967,7 +967,7 @@ class AlaudaDevopsDSL implements Serializable {
         String[] args = toStringArray(oargs);
         // so we first run with -o=json so we can examine the template processing results around
         // namespaces; but this of course does not actually create the objects
-        // 
+        //
         // so we re-run with create on the returned json to effect the actual creation
         Result r = new Result("newApp");
         r.actions.add((AcpAction.AcpActionResult) script._AcpAction(buildCommonArgs("new-app", null, args, "-o=json")));
@@ -1369,7 +1369,7 @@ class AlaudaDevopsDSL implements Serializable {
                 while (true) {
                     if (it.count() < min) {
                         try {
-                            // Pipeline timeouts are the correct way to abort this loop 
+                            // Pipeline timeouts are the correct way to abort this loop
                             // for taking too long
                             Thread.sleep(1000);
                         } catch (Throwable t) {
@@ -1645,8 +1645,8 @@ class AlaudaDevopsDSL implements Serializable {
                     String project = projectList.get(name + i);
                     if (project != null) {
                         projList = new HashMap<String, String>();
-                        // we hardcode the suffix to 0 since we are only sending 
-                        // 1 item from the original namelist down ... hence the 
+                        // we hardcode the suffix to 0 since we are only sending
+                        // 1 item from the original namelist down ... hence the
                         // suffix is now the index for the first entry in the array
                         projList.put(name + "0", project);
                     }
@@ -1833,8 +1833,22 @@ class AlaudaDevopsDSL implements Serializable {
     public class Settings implements Serializable {
         private String settings;
 
-        public String getSettings() {
-            return settings;
+        public String getSettings() throws IOException, DocumentException {
+            XMLWriter writer = null;
+            ByteArrayOutputStream baos = null;
+            try {
+                Document document = DocumentHelper.parseText(this.settings);
+                baos = new ByteArrayOutputStream();
+                OutputFormat format = OutputFormat.createPrettyPrint();
+                writer = new XMLWriter(baos, format);
+                writer.write(document);
+            } finally {
+                if (writer != null) {
+                    writer.close();
+                }
+            }
+
+            return baos.toString();
         }
 
         public void setSettings(String settings) {
@@ -2003,8 +2017,22 @@ class AlaudaDevopsDSL implements Serializable {
     public class Pom {
         private String pom;
 
-        public String getPom() {
-            return pom;
+        public String getPom() throws IOException, DocumentException {
+            XMLWriter writer = null;
+            ByteArrayOutputStream baos = null;
+            try {
+                Document document = DocumentHelper.parseText(this.pom);
+                baos = new ByteArrayOutputStream();
+                OutputFormat format = OutputFormat.createPrettyPrint();
+                writer = new XMLWriter(baos, format);
+                writer.write(document);
+            } finally {
+                if (writer != null) {
+                    writer.close();
+                }
+            }
+
+            return baos.toString();
         }
 
         public void setPom(String pom) {
@@ -2029,28 +2057,38 @@ class AlaudaDevopsDSL implements Serializable {
                 boolean isNeedCreate = true;
 
                 Element distributionManagement = rootElement.element("distributionManagement");
-                Element repo = null;
+                Element repository = null;
                 if (distributionManagement == null) {
                     distributionManagement = rootElement.addElement("distributionManagement");
                 } else {
 
-                    for (Iterator<Element> iterator = distributionManagement.elementIterator("repository"); iterator.hasNext();) {
-                        repo = iterator.next();
-                        if (id.equals(repo.element("id").getText())) {
-                            Element urlElement = repo.element("url");
-                            if (urlElement != null) {
-                                urlElement.setText(url);
-                            } else {
-                                repo.addElement("url").setText(url);
-                            }
-                            isNeedCreate = false;
-                            break;
+                    repository = distributionManagement.element("repository");
+
+                    if (repository != null) {
+                        Element elementId = repository.element("id");
+                        if (elementId != null) {
+                            elementId.setText(id);
+                        } else {
+                            repository.addElement("id").addText(id);
                         }
+                        Element elementUrl = repository.element("url");
+                        if (elementUrl != null) {
+                            elementUrl.setText(url);
+                        } else {
+                            repository.addElement("url").setText(url);
+                        }
+                    } else {
+                        repository = distributionManagement.addElement("repository");
+                        repository.addElement("id").addText(id);
+                        repository.addElement("url").addText(url);
+                        repository.addElement("layout").addText("default");
                     }
+
+                    isNeedCreate = false;
                 }
 
                 if (isNeedCreate) {
-                    Element repository = distributionManagement.addElement("repository");
+                    repository = distributionManagement.addElement("repository");
                     repository.addElement("id").addText(id);
                     repository.addElement("url").addText(url);
                     repository.addElement("layout").addText("default");
