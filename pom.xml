@@ -1,143 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" 
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
     <version>2.36</version>
-    <relativePath />
+    <relativePath></relativePath>
   </parent>
-
   <groupId>com.alauda.jenkins.plugins</groupId>
   <artifactId>alauda-devops-pipeline</artifactId>
   <version>${revision}${sha1}${changelist}</version>
   <packaging>hpi</packaging>
-  <properties>
-    <revision>2.6</revision>
-    <changelist>-SNAPSHOT</changelist>
-    <sha1/>
-
-    <jenkins.version>2.83</jenkins.version>
-    <java.level>8</java.level>
-    <findbugs-maven-plugin.version>3.0.1</findbugs-maven-plugin.version>
-    <findbugs.failOnError>false</findbugs.failOnError>
-  </properties>
-
   <name>Alauda DevOps Pipeline Plugin</name>
   <url>https://wiki.jenkins-ci.org/display/JENKINS/Alauda+DevOps+Pipeline+Plugin</url>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <version>${findbugs-maven-plugin.version}</version>
-        <configuration>
-          <xmlOutput>true</xmlOutput>
-          <failOnError>${findbugs.failOnError}</failOnError>
-        </configuration>
-        <executions>
-          <execution>
-            <id>run-findbugs</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
-  <profiles>
-    <profile>
-      <id>incrementals</id>
-      <properties>
-        <releases.id>nexus.acp.alauda.cn</releases.id>
-        <releases.name>nexus.acp.alauda.cn</releases.name>
-        <releases.url>https://nexus.acp.alauda.cn/repository/maven-incrementals/</releases.url>
-        <snapshots.id>nexus.acp.alauda.cn</snapshots.id>
-        <snapshots.name>nexus.acp.alauda.cn</snapshots.name>
-        <snapshots.url>https://nexus.acp.alauda.cn/repository/maven-snapshots/</snapshots.url>
-      </properties>
-    </profile>
-    <profile>
-      <id>default</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <releases.id>nexus.acp.alauda.cn</releases.id>
-        <releases.name>nexus.acp.alauda.cn</releases.name>
-        <releases.url>https://nexus.acp.alauda.cn/repository/maven-releases/</releases.url>
-        <snapshots.id>nexus.acp.alauda.cn</snapshots.id>
-        <snapshots.name>nexus.acp.alauda.cn</snapshots.name>
-        <snapshots.url>https://nexus.acp.alauda.cn/repository/maven-snapshots/</snapshots.url>
-      </properties>
-    </profile>
-  </profiles>
-
+  <organization>
+    <name>Alauda</name>
+    <url>http://www.alauda.io</url>
+  </organization>
   <licenses>
     <license>
       <name>MIT License</name>
       <url>http://opensource.org/licenses/MIT</url>
     </license>
   </licenses>
-
   <developers>
     <developer>
       <id>alaudaDevelopers</id>
       <name>Alauda Developers</name>
+      <email>devs@alauda.io</email>
       <organization>alauda</organization>
       <organizationUrl>http://alauda.io/</organizationUrl>
-      <email>devs@alauda.io</email>
     </developer>
   </developers>
-
   <scm>
     <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-    <url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
     <tag>${project.version}</tag>
+    <url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
   </scm>
-
-  <repositories>
-    <repository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </repository>
-    <repository>
-      <id>nexus-oss-snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </pluginRepository>
-  </pluginRepositories>
-
-  <organization>
-    <name>Alauda</name>
-    <url>http://www.alauda.io</url>
-  </organization>
   <distributionManagement>
     <repository>
       <id>${releases.id}</id>
@@ -148,6 +49,15 @@
       <url>${snapshots.url}</url>
     </snapshotRepository>
   </distributionManagement>
+  <properties>
+    <findbugs.failOnError>false</findbugs.failOnError>
+    <revision>2.7</revision>
+    <changelist>-SNAPSHOT</changelist>
+    <java.level>8</java.level>
+    <jenkins.version>2.83</jenkins.version>
+    <findbugs-maven-plugin.version>3.0.1</findbugs-maven-plugin.version>
+    <sha1></sha1>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
@@ -196,5 +106,81 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
-
+  <repositories>
+    <repository>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
+    </repository>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>nexus-oss-snapshots</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>${findbugs-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>run-findbugs</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <xmlOutput>true</xmlOutput>
+          <failOnError>${findbugs.failOnError}</failOnError>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <id>incrementals</id>
+      <properties>
+        <snapshots.url>https://nexus.acp.alauda.cn/repository/maven-snapshots/</snapshots.url>
+        <releases.id>nexus.acp.alauda.cn</releases.id>
+        <snapshots.id>nexus.acp.alauda.cn</snapshots.id>
+        <snapshots.name>nexus.acp.alauda.cn</snapshots.name>
+        <releases.url>https://nexus.acp.alauda.cn/repository/maven-incrementals/</releases.url>
+        <releases.name>nexus.acp.alauda.cn</releases.name>
+      </properties>
+    </profile>
+    <profile>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <snapshots.url>https://nexus.acp.alauda.cn/repository/maven-snapshots/</snapshots.url>
+        <releases.id>nexus.acp.alauda.cn</releases.id>
+        <snapshots.id>nexus.acp.alauda.cn</snapshots.id>
+        <snapshots.name>nexus.acp.alauda.cn</snapshots.name>
+        <releases.url>https://nexus.acp.alauda.cn/repository/maven-releases/</releases.url>
+        <releases.name>nexus.acp.alauda.cn</releases.name>
+      </properties>
+    </profile>
+  </profiles>
 </project>
