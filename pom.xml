@@ -51,7 +51,7 @@
   </distributionManagement>
   <properties>
     <findbugs.failOnError>false</findbugs.failOnError>
-    <revision>2.7</revision>
+    <revision>2.8</revision>
     <changelist>-SNAPSHOT</changelist>
     <java.level>8</java.level>
     <jenkins.version>2.83</jenkins.version>
