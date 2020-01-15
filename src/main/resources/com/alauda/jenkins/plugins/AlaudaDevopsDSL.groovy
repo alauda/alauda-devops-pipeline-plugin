@@ -12,6 +12,8 @@ import hudson.FilePath
 import hudson.Util
 import hudson.security.ACL
 import jenkins.model.Jenkins
+import net.sf.json.JSONObject
+import org.apache.commons.collections4.map.SingletonMap
 import org.apache.commons.io.Charsets
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
@@ -26,6 +28,7 @@ import org.dom4j.io.XMLWriter
 import org.jenkinsci.plugins.plaincredentials.StringCredentials
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted
 
+import javax.annotation.Nonnull
 import java.nio.channels.FileChannel
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -2101,5 +2104,116 @@ class AlaudaDevopsDSL implements Serializable {
             }
             return this;
         }
+    }
+
+    public class NotificationSender implements Serializable {
+        private List<String> receiver;
+        private Map<String, Object> body;
+
+        // NotificationMessage namespace/name
+        private String name;
+        private String namespace = "cpaas-system";
+
+        private final String SUFFIX = "0123456789abcdefghijklmnopqrstuvwxyz";
+        private final String AUTO_NAME_FORMAT = "devops-auto-%s"
+
+        NotificationSender(String... receiver) {
+            this.receiver = Arrays.asList(receiver)
+            this.name = String.format(AUTO_NAME_FORMAT, randomSuffix(8));
+            this.body = new HashMap<>();
+        }
+
+        @Whitelisted
+        public NotificationSender setPipeline(@Nonnull String pipeline) {
+            body.put("pipeline", JSONObject.fromObject(pipeline));
+            return this;
+        }
+
+        // NotificationMessage from Courier
+        public static class NotificationMessage {
+            private String name;
+            private String namespace;
+            private List<String> receiver;
+            private Map<String, Object> metadata;
+            private Map<String, Object> spec;
+
+            NotificationMessage(String name, String namespace, List<String> receiver, Map<String, Object> body) {
+                this.name = name;
+                this.namespace = namespace;
+                this.receiver = receiver;
+
+                // init
+
+                //metadata
+                metadata = new HashMap<>();
+                metadata.put("name", name);
+                metadata.put("namespace", namespace)
+
+                // spec
+                spec = new HashMap<>();
+                List<Map<String, String>> notifications = new ArrayList<>();
+                for (int index = 0; index < receiver.size(); index ++) {
+                    notifications.push(new SingletonMap<String, String>("name", receiver.get(index)));
+                }
+                spec.put("notifications", notifications)
+                spec.put("body", body)
+            }
+
+            @NonCPS
+            public String getApiVersion() {
+                return "aiops.alauda.io/v1beta1";
+            }
+
+            @NonCPS
+            public String getKind() {
+                return "NotificationMessage";
+            }
+
+            @NonCPS
+            public Map<String, Object> getMetadata() {
+                return metadata
+            }
+
+            @NonCPS
+            public Map<String, Object> getSpec() {
+                return spec;
+            }
+        }
+
+        @Whitelisted
+        public void send() {
+            withCluster() {
+                withProject(namespace) {
+                    create(JSONObject.fromObject(new NotificationMessage(name, namespace, receiver, body)))
+                }
+            }
+        }
+
+        @Whitelisted
+        public NotificationSender setName(@Nonnull String name) {
+            this.name = name;
+            return this;
+        }
+
+        @Whitelisted
+        public NotificationSender setNamespace(@Nonnull String namespace) {
+            this.namespace = namespace;
+            return this;
+        }
+
+        @NonCPS
+        private String randomSuffix(int len) {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < len; i ++) {
+                builder.append(SUFFIX.charAt((int)(Math.random()*SUFFIX.length())));
+            }
+            return builder.toString();
+        }
+    }
+
+    @NonCPS
+    @Whitelisted
+    public NotificationSender notificationSender(String... receiver) {
+        return new NotificationSender(receiver);
     }
 }
