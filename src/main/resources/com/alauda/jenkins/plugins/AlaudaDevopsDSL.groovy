@@ -2107,25 +2107,24 @@ class AlaudaDevopsDSL implements Serializable {
     }
 
     public class NotificationSender implements Serializable {
-        private List<String> receiver;
         private Map<String, Object> body;
 
         // NotificationMessage namespace/name
         private String name;
-        private String namespace = "cpaas-system";
+        private Map<String, Set<String>> notifications;
 
         private final String SUFFIX = "0123456789abcdefghijklmnopqrstuvwxyz";
         private final String AUTO_NAME_FORMAT = "devops-auto-%s"
 
-        NotificationSender(String... receiver) {
-            this.receiver = Arrays.asList(receiver)
+        NotificationSender() {
             this.name = String.format(AUTO_NAME_FORMAT, randomSuffix(8));
+            this.notifications = new HashMap<>();
             this.body = new HashMap<>();
         }
 
         @Whitelisted
-        public NotificationSender setPipeline(@Nonnull String pipeline) {
-            body.put("pipeline", JSONObject.fromObject(pipeline));
+        public NotificationSender setData(@Nonnull Map<String, Object> body) {
+            this.body = body;
             return this;
         }
 
@@ -2183,8 +2182,10 @@ class AlaudaDevopsDSL implements Serializable {
         @Whitelisted
         public void send() {
             withCluster() {
-                withProject(namespace) {
-                    create(JSONObject.fromObject(new NotificationMessage(name, namespace, receiver, body)))
+                for(String notificationName : this.notifications.keySet()) {
+                    withProject(notificationName) {
+                        create(JSONObject.fromObject(new NotificationMessage(name, notificationName, this.notifications.get(notificationName).asList(), this.body)))
+                    }
                 }
             }
         }
@@ -2196,8 +2197,10 @@ class AlaudaDevopsDSL implements Serializable {
         }
 
         @Whitelisted
-        public NotificationSender setNamespace(@Nonnull String namespace) {
-            this.namespace = namespace;
+        public NotificationSender bindingNotification(@Nonnull String namespace, @Nonnull String name) {
+            Set<String> names = this.notifications.get(namespace, new HashSet<String>());
+            names.add(name);
+            this.notifications.put(namespace, names);
             return this;
         }
 
@@ -2213,7 +2216,7 @@ class AlaudaDevopsDSL implements Serializable {
 
     @NonCPS
     @Whitelisted
-    public NotificationSender notificationSender(String... receiver) {
-        return new NotificationSender(receiver);
+    public NotificationSender notificationSender() {
+        return new NotificationSender();
     }
 }
