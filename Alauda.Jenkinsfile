@@ -104,7 +104,7 @@ pipeline {
 		stage('Deploy to Nexus') {
 			steps{
 				script{
-					hpiRelease.deploy()
+					hpiRelease.deploy("clean -DskipTests")
 					if(hpiRelease.deployToUC){
 						hpiRelease.triggerBackendIndexing(RELEASE_VERSION)
 						hpiRelease.waitUC("alauda-devops-pipeline", RELEASE_VERSION, 15)
