@@ -38,6 +38,7 @@ class AlaudaPlatformDSL implements Serializable {
         def secretName
         def secretNamespace
         def apiUrl
+        def accessUrl
         def token
 
         withCluster(null, managerClusterCredentialId) {
@@ -49,6 +50,7 @@ class AlaudaPlatformDSL implements Serializable {
                 def toolName = binding.spec.codeQualityTool.name
                 def tool = selector("codequalitytool.devops.alauda.io", toolName).object()
                 apiUrl = tool.spec.http.host
+                accessUrl = tool.spec.http.accessUrl
             }
 
             withProject(secretNamespace) {
@@ -60,6 +62,7 @@ class AlaudaPlatformDSL implements Serializable {
 
         script.setProperty("SONAR_SERVER_URL", apiUrl)
         script.setProperty("SONAR_TOKEN", token)
+        script.setProperty("SONAR_ACCESS_URL", accessUrl)
 
         body()
     }
