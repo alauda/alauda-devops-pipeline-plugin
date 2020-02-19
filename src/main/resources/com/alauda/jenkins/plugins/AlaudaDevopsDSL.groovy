@@ -2113,11 +2113,7 @@ class AlaudaDevopsDSL implements Serializable {
         private String name;
         private Map<String, Set<String>> notifications;
 
-        private final String SUFFIX = "0123456789abcdefghijklmnopqrstuvwxyz";
-        private final String AUTO_NAME_FORMAT = "devops-auto-%s"
-
         NotificationSender() {
-            this.name = String.format(AUTO_NAME_FORMAT, randomSuffix(8));
             this.notifications = new HashMap<>();
             this.body = new HashMap<>();
         }
@@ -2131,6 +2127,7 @@ class AlaudaDevopsDSL implements Serializable {
         // NotificationMessage from Courier
         public static class NotificationMessage {
             private String name;
+            private final String generateName = "devops-notification-message-";
             private String namespace;
             private List<String> receiver;
             private Map<String, Object> metadata;
@@ -2145,7 +2142,10 @@ class AlaudaDevopsDSL implements Serializable {
 
                 //metadata
                 metadata = new HashMap<>();
-                metadata.put("name", name);
+                if(name != null && name.length() > 0) {
+                    metadata.put("name", name);
+                }
+                metadata.put("generateName", generateName)
                 metadata.put("namespace", namespace)
 
                 // spec
@@ -2202,15 +2202,6 @@ class AlaudaDevopsDSL implements Serializable {
             names.add(name);
             this.notifications.put(namespace, names);
             return this;
-        }
-
-        @NonCPS
-        private String randomSuffix(int len) {
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < len; i ++) {
-                builder.append(SUFFIX.charAt((int)(Math.random()*SUFFIX.length())));
-            }
-            return builder.toString();
         }
     }
 
