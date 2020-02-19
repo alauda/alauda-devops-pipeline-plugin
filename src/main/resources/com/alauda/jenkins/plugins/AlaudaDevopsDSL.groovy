@@ -2182,9 +2182,9 @@ class AlaudaDevopsDSL implements Serializable {
         @Whitelisted
         public void send() {
             withCluster() {
-                for(String notificationName : this.notifications.keySet()) {
-                    withProject(notificationName) {
-                        create(JSONObject.fromObject(new NotificationMessage(name, notificationName, this.notifications.get(notificationName).asList(), this.body)))
+                for(String notificationNamespace : this.notifications.keySet()) {
+                    withProject(notificationNamespace) {
+                        create(JSONObject.fromObject(new NotificationMessage(name, notificationNamespace, this.notifications.get(notificationNamespace).asList(), this.body)))
                     }
                 }
             }
