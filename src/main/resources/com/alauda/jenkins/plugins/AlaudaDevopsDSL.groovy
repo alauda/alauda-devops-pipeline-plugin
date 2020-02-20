@@ -12,6 +12,8 @@ import hudson.FilePath
 import hudson.Util
 import hudson.security.ACL
 import jenkins.model.Jenkins
+import net.sf.json.JSONObject
+import org.apache.commons.collections4.map.SingletonMap
 import org.apache.commons.io.Charsets
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
@@ -26,6 +28,7 @@ import org.dom4j.io.XMLWriter
 import org.jenkinsci.plugins.plaincredentials.StringCredentials
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted
 
+import javax.annotation.Nonnull
 import java.nio.channels.FileChannel
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -2101,5 +2104,110 @@ class AlaudaDevopsDSL implements Serializable {
             }
             return this;
         }
+    }
+
+    public class NotificationSender implements Serializable {
+        private Map<String, Object> body;
+
+        // NotificationMessage namespace/name
+        private String name;
+        private Map<String, Set<String>> notifications;
+
+        NotificationSender() {
+            this.notifications = new HashMap<>();
+            this.body = new HashMap<>();
+        }
+
+        @Whitelisted
+        public NotificationSender setData(@Nonnull Map<String, Object> body) {
+            this.body = body;
+            return this;
+        }
+
+        // NotificationMessage from Courier
+        public static class NotificationMessage {
+            private String name;
+            private final String generateName = "devops-notification-message-";
+            private String namespace;
+            private List<String> receiver;
+            private Map<String, Object> metadata;
+            private Map<String, Object> spec;
+
+            NotificationMessage(String name, String namespace, List<String> receiver, Map<String, Object> body) {
+                this.name = name;
+                this.namespace = namespace;
+                this.receiver = receiver;
+
+                // init
+
+                //metadata
+                metadata = new HashMap<>();
+                if(name != null && name.length() > 0) {
+                    metadata.put("name", name);
+                }
+                metadata.put("generateName", generateName)
+                metadata.put("namespace", namespace)
+
+                // spec
+                spec = new HashMap<>();
+                List<Map<String, String>> notifications = new ArrayList<>();
+                for (int index = 0; index < receiver.size(); index ++) {
+                    notifications.push(new SingletonMap<String, String>("name", receiver.get(index)));
+                }
+                spec.put("notifications", notifications)
+                spec.put("body", body)
+            }
+
+            @NonCPS
+            public String getApiVersion() {
+                return "aiops.alauda.io/v1beta1";
+            }
+
+            @NonCPS
+            public String getKind() {
+                return "NotificationMessage";
+            }
+
+            @NonCPS
+            public Map<String, Object> getMetadata() {
+                return metadata
+            }
+
+            @NonCPS
+            public Map<String, Object> getSpec() {
+                return spec;
+            }
+        }
+
+        @Whitelisted
+        public void send() {
+            withCluster() {
+                for(String notificationNamespace : this.notifications.keySet()) {
+                    withProject(notificationNamespace) {
+                        create(JSONObject.fromObject(new NotificationMessage(name, notificationNamespace, this.notifications.get(notificationNamespace).asList(), this.body)))
+                    }
+                }
+            }
+        }
+
+        @Whitelisted
+        public NotificationSender setName(@Nonnull String name) {
+            this.name = name;
+            return this;
+        }
+
+        @Whitelisted
+        public NotificationSender bindingNotification(@Nonnull String namespace, @Nonnull String name) {
+            Set<String> names = this.notifications.get(namespace, new HashSet<String>());
+            names.add(name);
+            this.notifications.put(namespace, names);
+            return this;
+        }
+    }
+
+    @NonCPS
+    @Whitelisted
+    public NotificationSender notificationSender() {
+        return new NotificationSender();
     }
 }
