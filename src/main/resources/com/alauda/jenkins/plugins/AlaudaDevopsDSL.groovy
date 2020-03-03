@@ -467,7 +467,7 @@ class AlaudaDevopsDSL implements Serializable {
      * usage example:
      *
      * <pre>
-     * withBindingInProjectSonarEnv("test-namespace", "test-code-quality-binding") {*     sh "echo \"SonarQube Server URL is $SONAR_SERVER_URL\""
+     * withBindInProjectSonarEnv("test-namespace", "test-code-quality-binding") {*     sh "echo \"SonarQube Server URL is $SONAR_SERVER_URL\""
      *     sh "echo \"SonarQube Server token is $SONAR_TOKEN\""
      *}* </pre>
      *
