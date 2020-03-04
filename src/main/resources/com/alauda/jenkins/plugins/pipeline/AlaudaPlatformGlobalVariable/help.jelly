@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+
+<div>
+Example:
+<code>
+script { <br />
+    container('tools') { <br />
+        alaudaPlatform.withBindInProjectSonarEnv("zxj", "sonar-zxj") { <br />
+            sh "echo \"SonarQube Server URL is $SONAR_SERVER_URL\"" <br />
+            sh "echo \"SonarQube Server token is $SONAR_TOKEN\"" <br />
+            sh "sonar-scanner -D sonar.host.url=$SONAR_SERVER_URL -D sonar.login=$SONAR_TOKEN  -D sonar.projectName=sonar-scan-demo -D sonar.projectKey=demo" <br />
+        } <br />
+    } <br />
+} <br />
+</code>
+</div>
+
+</j:jelly>
