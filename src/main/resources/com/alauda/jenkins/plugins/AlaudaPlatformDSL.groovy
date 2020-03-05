@@ -43,14 +43,29 @@ class AlaudaPlatformDSL implements Serializable {
 
         withCluster(null, managerClusterCredentialId) {
             withProject(project) {
-                binding = selector("codequalitybinding.devops.alauda.io", bindingName).object()
+                try {
+                    binding = selector("codequalitybinding.devops.alauda.io", bindingName).object()
+                } catch (Exception e) {
+                    String msg = String.format("ERROR: Cannot found Sonarqube binding %s in namespace %s, please make sure you have it.", bindingName, project);
+                    script.println(msg)
+                    LOGGER.log(Level.SEVERE, msg, e);
+                    throw e
+                }
+
                 secretName = binding.spec.secret.name
                 secretNamespace = binding.spec.secret.namespace
 
-                def toolName = binding.spec.codeQualityTool.name
-                def tool = selector("codequalitytool.devops.alauda.io", toolName).object()
-                apiUrl = tool.spec.http.host
-                accessUrl = tool.spec.http.accessUrl
+                try {
+                    def toolName = binding.spec.codeQualityTool.name
+                    def tool = selector("codequalitytool.devops.alauda.io", toolName).object()
+                    apiUrl = tool.spec.http.host
+                    accessUrl = tool.spec.http.accessUrl
+                } catch (Exception e) {
+                    String msg = String.format("ERROR: Cannot found Sonarqube %s, please make sure you have it.", toolName);
+                    script.println(msg)
+                    LOGGER.log(Level.SEVERE, msg, e);
+                    throw e
+                }
             }
 
             withProject(secretNamespace) {
