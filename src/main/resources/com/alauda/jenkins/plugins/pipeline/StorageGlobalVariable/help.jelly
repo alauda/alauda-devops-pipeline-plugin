@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+
+<div>
+Example:
+<code>
+script { <br />
+        alaudaStorage.add('key', 'value') <br />
+        println alaudaStorage.getObject('key') <br />
+        // value <br />
+        println alaudaStorage.getObject('key-2', 'default') <br />
+        // default <br />
+        alaudaStorage.addLabel('key', 'label-1', 'label-2') <br />
+        println alaudaStorage.getByPartialLabels('label-1') <br />
+        // {key=value} <br />
+        println alaudaStorage.getByAllLabels('label-1', 'good') <br />
+        // {} <br />
+}
+</code>
+</div>
+
+</j:jelly>
