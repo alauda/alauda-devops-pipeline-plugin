@@ -1858,6 +1858,59 @@ class AlaudaDevopsDSL implements Serializable {
             this.settings = settings;
         }
 
+        public Settings addMirror(String mirrorId, String mirrorURL, String mirrorOf) throws Exception {
+            if (mirrorId == null || mirrorURL == null || mirrorOf == null) {
+                throw new IllegalArgumentException("argument must not null.");
+            }
+
+            try {
+                Document document = DocumentHelper.parseText(this.settings);
+                Element root = document.getRootElement();
+
+                //检测mirrors是否存在
+                Element mirror = null;
+                Element mirrors = root.element("mirrors");
+                boolean isNeedCreate = true;
+                if (mirrors == null) {
+                    mirrors = root.addElement("mirrors");
+                } else {
+                    for (Iterator<Element> iter = mirrors.elementIterator("mirror"); iter.hasNext();) {
+                        mirror = iter.next();
+                        if (mirrorId.equals(mirror.element("id").getText())) {
+                            Element url = mirror.element("url");
+                            if (url != null) {
+                                url.setText(mirrorURL);
+                            } else {
+                                mirror.addElement("url").setText(mirrorURL);
+                            }
+                            Element of = mirror.element("mirrorOf");
+                            if (of != null) {
+                                of.setText(of.getText() + "," + mirrorOf);
+                            } else {
+                                mirror.addElement("mirrorOf").setText(mirrorOf);
+                            }
+
+                            isNeedCreate = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (isNeedCreate) {
+                    mirror = mirrors.addElement("mirror");
+                    mirror.addElement("id").setText(mirrorId);
+                    mirror.addElement("url").setText(mirrorURL);
+                    mirror.addElement("mirrorOf").setText(mirrorOf);
+                }
+
+                this.setSettings(document.asXML());
+
+            } catch (DocumentException e) {
+                throw e;
+            }
+            return this;
+        }
+
         /**
          * @param profileId
          * @param repoId
@@ -1874,6 +1927,7 @@ class AlaudaDevopsDSL implements Serializable {
                 Document document = DocumentHelper.parseText(this.settings);
                 Element rootElement = document.getRootElement();
                 boolean isNeedCreate = true;
+                boolean pluginIsNeedCreate = true;
                 Element profile = null;
                 Element profiles = rootElement.element("profiles");
                 if (profiles == null) {
@@ -1921,7 +1975,33 @@ class AlaudaDevopsDSL implements Serializable {
                     repository.addElement("id").addText(repoId);
                     repository.addElement("url").addText(url);
                     repository.addElement("layout").addText("default");
+                }
 
+                Element pluginRepositories = profile.element("pluginRepositories");
+                Element pluginrepo = null;
+                if (pluginRepositories == null) {
+                    pluginRepositories = profile.addElement("pluginRepositories");
+                } else {
+                    for (Iterator<Element> iterator = pluginRepositories.elementIterator("pluginRepository"); iterator.hasNext();) {
+                        pluginrepo = iterator.next();
+                        if (repoId.equals(pluginrepo.element("id").getText())) {
+                            Element urlElement = pluginrepo.element("url");
+                            if (urlElement != null) {
+                                urlElement.setText(url);
+                            } else {
+                                pluginrepo.addElement("url").setText(url);
+                            }
+                            pluginIsNeedCreate = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (pluginIsNeedCreate) {
+                    Element pluginRepository = pluginRepositories.addElement("pluginRepository");
+                    pluginRepository.addElement("id").addText(repoId);
+                    pluginRepository.addElement("url").addText(url);
+                    pluginRepository.addElement("layout").addText("default");
                 }
 
                 //create active profiles
