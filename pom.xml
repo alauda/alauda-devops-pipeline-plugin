@@ -50,13 +50,13 @@
     </snapshotRepository>
   </distributionManagement>
   <properties>
-    <revision>2.10</revision>
     <findbugs.failOnError>false</findbugs.failOnError>
+    <revision>2.12</revision>
     <changelist>-SNAPSHOT</changelist>
-    <jenkins.version>2.83</jenkins.version>
     <java.level>8</java.level>
-    <sha1></sha1>
+    <jenkins.version>2.83</jenkins.version>
     <findbugs-maven-plugin.version>3.0.1</findbugs-maven-plugin.version>
+    <sha1></sha1>
   </properties>
   <dependencies>
     <dependency>
