@@ -154,7 +154,6 @@ pipeline {
 		always {
 			junit allowEmptyResults: true, testResults: "**/target/surefire-reports/**/*.xml"
 			script {
-				def result = currentBuild.currentResult == "SUCCESS" ? "success" : "failed"
 				deploy.alaudaNotification status: result
 			}
 		}
