@@ -105,10 +105,6 @@ pipeline {
 			steps{
 				script{
 					hpiRelease.deploy("clean -DskipTests")
-					if(hpiRelease.deployToUC){
-						hpiRelease.triggerBackendIndexing(RELEASE_VERSION)
-						hpiRelease.waitUC("alauda-devops-pipeline", RELEASE_VERSION, 15)
-					}
 				}
 			}
 		}
