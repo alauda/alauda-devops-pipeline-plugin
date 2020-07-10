@@ -12,6 +12,7 @@ import hudson.Util
 import hudson.security.ACL
 import jenkins.model.Jenkins
 import org.jenkinsci.plugins.plaincredentials.StringCredentials
+import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted
 import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 import org.jenkinsci.plugins.workflow.cps.CpsThread
@@ -28,6 +29,11 @@ class AlaudaPlatformDSL implements Serializable {
     public AlaudaPlatformDSL(CpsScript script, String managerClusterCredentialId) {
         this.script = script;
         this.managerClusterCredentialId = managerClusterCredentialId;
+    }
+
+    @Whitelisted
+    public AlaudaPlatformDSL newInstance() {
+        return new AlaudaPlatformDSL(this.script, this.managerClusterCredentialId);
     }
 
     public <V> void withBindInProjectSonarEnv(Object oproject, Object obindingName, Closure<V> body) {

@@ -33,27 +33,27 @@ class StorageDSL implements Serializable {
         this.storage = new Storage();
     }
 
-    public void add(String key, Object value, String... labels) {
+    public synchronized void add(String key, Object value, String... labels) {
         storage.add(key, value, labels)
     }
 
-    public void addLabel(String key, String... labels) {
+    public synchronized void addLabel(String key, String... labels) {
         storage.addLabel(key, labels)
     }
 
-    public Object getObject(String key) {
+    public synchronized Object getObject(String key) {
         return storage.getObject(key)
     }
 
-    public Object getObject(String key, Object defaultValue) {
+    public synchronized Object getObject(String key, Object defaultValue) {
         return storage.getObject(key, defaultValue)
     }
 
-    public Map<String, Object> getByPartialLabels(String... labels) {
+    public synchronized Map<String, Object> getByPartialLabels(String... labels) {
         return storage.getByPartialLabels(labels)
     }
 
-    public Map<String, Object> getByAllLabels(String... labels) {
+    public synchronized Map<String, Object> getByAllLabels(String... labels) {
         return storage.getByAllLabels(labels)
     }
 
