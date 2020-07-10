@@ -67,7 +67,25 @@ class AlaudaDevopsDSL implements Serializable {
     }
 
     public AlaudaDevopsDSL(CpsScript script) {
-        this.script = script
+        this.script = script;
+        this.currentContext = new Context(null, ContextId.WITH_CLUSTER);
+    }
+
+    @Whitelisted
+    public AlaudaDevopsDSL newInstance() {
+        AlaudaDevopsDSL instance = new AlaudaDevopsDSL(this.script);
+//        instance.setCurrentContext(new Context(null, ContextId.WITH_CLUSTER));
+        return instance;
+    }
+
+    /**
+     * Should not call from the script side
+     * @param context
+     * @return
+     */
+    @NonCPS
+    public setCurrentContext(Context context) {
+        this.currentContext = context;
     }
 
     public synchronized Capabilities getCapabilities() {
