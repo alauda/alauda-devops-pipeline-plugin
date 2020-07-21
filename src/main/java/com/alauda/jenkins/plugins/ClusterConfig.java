@@ -192,7 +192,7 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
                                               @QueryParameter String credentialsId,
                                               @QueryParameter String serverCertificateAuthority,
                                               @QueryParameter boolean skipTlsVerify) {
-            LOGGER.log(Level.INFO, "verify connection to {}, skip tls {}", new Object[]{serverUrl, skipTlsVerify});
+            LOGGER.log(Level.INFO, "verify connection to {0}, skip tls {1}", new Object[]{serverUrl, skipTlsVerify});
             String token;
             try {
                 token = CredentialsUtils.getToken(credentialsId);
