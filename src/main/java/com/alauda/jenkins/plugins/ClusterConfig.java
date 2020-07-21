@@ -14,6 +14,7 @@ import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -39,8 +40,12 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implements Serializable {
+    static final Logger LOGGER = Logger.getLogger(ClusterConfig.class.getName());
+
     private static final long serialVersionUID = 1L;
     // Human readable name for cluster. Used in drop down lists.
     private String name;
@@ -158,8 +163,7 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
 
         Jenkins jenkins = Jenkins.getInstance();
         AbstractIdCredentialsListBoxModel<StandardListBoxModel, StandardCredentials> defaultCredentials =
-                new StandardListBoxModel().includeEmptyValue()
-                .includeCurrentValue(credentialsId);
+                new StandardListBoxModel().includeEmptyValue();
 
         if (!jenkins.hasPermission(Jenkins.ADMINISTER)) {
             // Important! Otherwise you expose credentials metadata to random
@@ -169,9 +173,7 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
 
         return defaultCredentials
                 .includeAs(ACL.SYSTEM, jenkins, DevopsTokenCredentials.class) // TODO will remove this in later version
-                .includeAs(ACL.SYSTEM, jenkins, StringCredentials.class)
-                .includeAs(ACL.SYSTEM, jenkins, StandardUsernamePasswordCredentials.class)
-                .includeAs(ACL.SYSTEM, jenkins, StandardCertificateCredentials.class);
+                .includeAs(ACL.SYSTEM, jenkins, StringCredentials.class);
     }
 
     @Extension
@@ -194,6 +196,7 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
                                               @QueryParameter String credentialsId,
                                               @QueryParameter String serverCertificateAuthority,
                                               @QueryParameter boolean skipTlsVerify) {
+            LOGGER.info("verify connection to " + serverUrl + ", skip tls " + skipTlsVerify);
             String token;
             try {
                 token = CredentialsUtils.getToken(credentialsId);
@@ -211,6 +214,7 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
                     return FormValidation.error("Failed to connect to cluster");
                 }
             } catch (GeneralSecurityException | IOException e) {
+                LOGGER.log(Level.SEVERE, "failed when do verify connect", e);
                 return FormValidation.error(String.format("Failed to connect to Cluster: %s", e.getMessage()));
             }
         }
@@ -266,13 +270,21 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
 
             Response res = client.newCall(req).execute();
 
-            JSONObject jsonObject = JSONObject.fromObject(res.body().string());
+            if (res.body() != null) {
+                String jsonStr = res.body().string();
+                try {
+                    JSONObject jsonObject = JSONObject.fromObject(jsonStr);
+                    if (jsonObject == null) {
+                        return false;
+                    }
 
-            if (jsonObject == null) {
-                return false;
+                    return jsonObject.getString("kind").equals("NamespaceList");
+                } catch (JSONException e) {
+                    LOGGER.log(Level.SEVERE, "cannot parse json from " + jsonStr);
+                    throw e;
+                }
             }
-
-            return jsonObject.getString("kind").equals("NamespaceList");
+            return false;
         }
 
         /**
