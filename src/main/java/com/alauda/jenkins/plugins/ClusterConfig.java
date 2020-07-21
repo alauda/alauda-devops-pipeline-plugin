@@ -157,10 +157,6 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
     // http://javadoc.jenkins-ci.org/credentials/com/cloudbees/plugins/credentials/common/AbstractIdCredentialsListBoxModel.html
     // https://github.com/jenkinsci/kubernetes-plugin/blob/master/src/main/java/org/csanchez/jenkins/plugins/kubernetes/KubernetesCloud.java
     public static ListBoxModel doFillCredentialsIdItems(String credentialsId) {
-        if (credentialsId == null) {
-            credentialsId = "";
-        }
-
         Jenkins jenkins = Jenkins.getInstance();
         AbstractIdCredentialsListBoxModel<StandardListBoxModel, StandardCredentials> defaultCredentials =
                 new StandardListBoxModel().includeEmptyValue();
@@ -196,7 +192,7 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
                                               @QueryParameter String credentialsId,
                                               @QueryParameter String serverCertificateAuthority,
                                               @QueryParameter boolean skipTlsVerify) {
-            LOGGER.info("verify connection to " + serverUrl + ", skip tls " + skipTlsVerify);
+            LOGGER.info(String.format("verify connection to %s, skip tls %s", serverUrl, skipTlsVerify));
             String token;
             try {
                 token = CredentialsUtils.getToken(credentialsId);
