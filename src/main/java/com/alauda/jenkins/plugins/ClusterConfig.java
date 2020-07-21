@@ -156,7 +156,7 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
     // https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Plugin
     // http://javadoc.jenkins-ci.org/credentials/com/cloudbees/plugins/credentials/common/AbstractIdCredentialsListBoxModel.html
     // https://github.com/jenkinsci/kubernetes-plugin/blob/master/src/main/java/org/csanchez/jenkins/plugins/kubernetes/KubernetesCloud.java
-    public static ListBoxModel doFillCredentialsIdItems(String credentialsId) {
+    public static ListBoxModel doFillCredentialsIdItems() {
         Jenkins jenkins = Jenkins.getInstance();
         AbstractIdCredentialsListBoxModel<StandardListBoxModel, StandardCredentials> defaultCredentials =
                 new StandardListBoxModel().includeEmptyValue();
@@ -192,7 +192,7 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
                                               @QueryParameter String credentialsId,
                                               @QueryParameter String serverCertificateAuthority,
                                               @QueryParameter boolean skipTlsVerify) {
-            LOGGER.info(String.format("verify connection to %s, skip tls %s", serverUrl, skipTlsVerify));
+            LOGGER.log(Level.INFO, String.format("verify connection to %s, skip tls %s", serverUrl, skipTlsVerify));
             String token;
             try {
                 token = CredentialsUtils.getToken(credentialsId);
@@ -215,11 +215,10 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
             }
         }
 
-        public ListBoxModel doFillCredentialsIdItems(
-                @QueryParameter String credentialsId) {
+        public ListBoxModel doFillCredentialsIdItems() {
             // It is valid to choose no default credential, so enable
             // 'includeEmpty'
-            return ClusterConfig.doFillCredentialsIdItems(credentialsId);
+            return ClusterConfig.doFillCredentialsIdItems();
         }
 
     }
