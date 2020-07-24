@@ -374,9 +374,8 @@ public abstract class BaseStep extends Builder {
             return items;
         }
 
-        public ListBoxModel doFillCredentialsIdItems(
-                @QueryParameter String credentialsId) {
-            return ClusterConfig.doFillCredentialsIdItems(credentialsId);
+        public ListBoxModel doFillCredentialsIdItems() {
+            return ClusterConfig.doFillCredentialsIdItems();
         }
 
         public ListBoxModel doFillLogLevelItems() {
