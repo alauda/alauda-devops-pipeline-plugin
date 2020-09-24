@@ -1,6 +1,7 @@
 package com.alauda.jenkins.plugins.cluster;
 
 import com.alauda.jenkins.plugins.Devops;
+import com.alauda.jenkins.plugins.Devops.DescriptorImpl;
 import com.alauda.jenkins.plugins.core.NotSupportAuthException;
 import com.alauda.jenkins.plugins.core.NotSupportSecretException;
 import hudson.Extension;
@@ -17,7 +18,6 @@ import io.kubernetes.client.informer.ResourceEventHandler;
 import io.kubernetes.client.informer.SharedIndexInformer;
 import io.kubernetes.client.informer.SharedInformerFactory;
 import io.kubernetes.client.util.CallGeneratorParams;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,7 +56,14 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
         this.kubernetesCluster = kubernetesCluster;
         this.apiClient = apiClient;
 
+        setDefaultCluster(kubernetesCluster);
+
         watch();
+    }
+
+    private void setDefaultCluster(KubernetesCluster cluster) {
+        Devops.DescriptorImpl descriptor = (DescriptorImpl) new Devops().getDescriptor();
+       descriptor.setDefaultCluster(cluster);
     }
 
     public void watch() {

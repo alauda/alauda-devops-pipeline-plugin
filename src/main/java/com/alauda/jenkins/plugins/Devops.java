@@ -89,18 +89,7 @@ public class Devops extends AbstractDescribableImpl<Devops> {
             if(config != null) {
                 KubernetesCluster cluster = config.getCluster();
 
-                ClusterConfig clusterConfig = getLocalClusterConfig(Devops.DEFAULT_CLUSTER);
-                if(clusterConfig == null) {
-                    clusterConfig = new ClusterConfig(Devops.DEFAULT_CLUSTER);
-                    addClusterConfig(clusterConfig);
-                }
-
-                clusterConfig.setServerUrl(cluster.getMasterUrl());
-                clusterConfig.setSkipTlsVerify(cluster.isSkipTlsVerify());
-                clusterConfig.setCredentialsId(cluster.getCredentialsId());
-                clusterConfig.setServerCertificateAuthority(cluster.getServerCertificateAuthority());
-
-                ManagerClusterCache.getInstance().setCredentialId(cluster.getCredentialsId());
+                setDefaultCluster(cluster);
             }
 
             save();
@@ -116,6 +105,21 @@ public class Devops extends AbstractDescribableImpl<Devops> {
             }
 
             return true;
+        }
+
+        public void setDefaultCluster(KubernetesCluster cluster) {
+            ClusterConfig clusterConfig = getLocalClusterConfig(Devops.DEFAULT_CLUSTER);
+            if(clusterConfig == null) {
+                clusterConfig = new ClusterConfig(Devops.DEFAULT_CLUSTER);
+                addClusterConfig(clusterConfig);
+            }
+
+            clusterConfig.setServerUrl(cluster.getMasterUrl());
+            clusterConfig.setSkipTlsVerify(cluster.isSkipTlsVerify());
+            clusterConfig.setCredentialsId(cluster.getCredentialsId());
+            clusterConfig.setServerCertificateAuthority(cluster.getServerCertificateAuthority());
+
+            ManagerClusterCache.getInstance().setCredentialId(cluster.getCredentialsId());
         }
 
         // Creates a model that fills in logLevel options in configuration UI
