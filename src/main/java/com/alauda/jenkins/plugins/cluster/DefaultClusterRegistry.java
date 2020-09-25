@@ -63,7 +63,8 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
 
     private void setDefaultCluster(KubernetesCluster cluster) {
         Devops.DescriptorImpl descriptor = (DescriptorImpl) new Devops().getDescriptor();
-       descriptor.setDefaultCluster(cluster);
+        descriptor.setDefaultCluster(cluster);
+        descriptor.save();
     }
 
     public void watch() {

@@ -120,6 +120,7 @@ public class Devops extends AbstractDescribableImpl<Devops> {
             clusterConfig.setServerCertificateAuthority(cluster.getServerCertificateAuthority());
 
             ManagerClusterCache.getInstance().setCredentialId(cluster.getCredentialsId());
+
         }
 
         // Creates a model that fills in logLevel options in configuration UI
