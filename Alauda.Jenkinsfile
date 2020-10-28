@@ -92,14 +92,31 @@ pipeline {
 		}
 
 		stage("Code Scan"){
-			steps{
-				container("tools"){
-					script{
-						deploy.scan().startACPSonar(null, "-D sonar.projectVersion=${RELEASE_VERSION}")
+			failFast true
+			parallel {
+				stage("Code Scan"){
+					steps{
+						container("tools"){
+							script{
+								deploy.scan().startACPSonar(null, "-D sonar.projectVersion=${RELEASE_VERSION}")
+							}
+						}
+					}
+				}
+				stage('Sec Scan'){
+					steps {
+						script{
+							def sec = deploy.secScan("java", false, 1)
+							sec.containerName = 'java'
+							container(sec.containerName){
+								sec.install().start()
+							}
+						}
 					}
 				}
 			}
 		}
+
 
 		stage('Deploy to Nexus') {
 			steps{
