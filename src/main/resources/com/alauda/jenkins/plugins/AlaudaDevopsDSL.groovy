@@ -2270,7 +2270,7 @@ class AlaudaDevopsDSL implements Serializable {
             withCluster() {
                 for(String notificationNamespace : this.notifications.keySet()) {
                     withProject(notificationNamespace) {
-                        create(JSONObject.fromObject(new NotificationMessage(name, notificationNamespace, this.notifications.get(notificationNamespace).asList(), this.body)))
+                        create(JSONObject.fromObject(new NotificationMessage(name, notificationNamespace, this.notifications.get(notificationNamespace).asList(), this.body)), "--validate=false")
                     }
                 }
             }
