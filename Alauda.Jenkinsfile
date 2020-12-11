@@ -14,6 +14,7 @@ def deployment
 def RELEASE_VERSION
 def TEST_IMAGE
 def hpiRelease
+def sonarParams
 
 pipeline {
 	// 运行node条件
@@ -91,32 +92,28 @@ pipeline {
 			}
 		}
 
-		stage("Code Scan"){
-			failFast true
-			parallel {
-				stage("Code Scan"){
-					steps{
-						container("tools"){
-							script{
-								deploy.scan().startACPSonar(null, "-D sonar.projectVersion=${RELEASE_VERSION}")
-							}
-						}
-					}
-				}
-				stage('Sec Scan'){
-					steps {
-						script{
-							def sec = deploy.secScan("java", false, 1)
-							sec.containerName = 'java'
-							container(sec.containerName){
-								sec.install().start()
-							}
-						}
+		stage('Sec Scan'){
+			steps {
+				script{
+					def sec = deploy.secScan("java", false, 1)
+					sec.containerName = 'java'
+					container(sec.containerName){
+						sonarParams = sec.install().start().getSonarParams()
 					}
 				}
 			}
 		}
 
+
+		stage("Code Scan"){
+			steps{
+				container("tools"){
+					script{
+						deploy.scan().startACPSonar(null, "-D sonar.projectVersion=${RELEASE_VERSION}" + (sonarParams?" -D ${sonarParams}":""))
+					}
+				}
+			}
+		}
 
 		stage('Deploy to Nexus') {
 			steps{
