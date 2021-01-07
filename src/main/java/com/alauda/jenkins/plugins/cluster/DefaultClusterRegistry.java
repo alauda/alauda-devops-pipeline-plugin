@@ -12,16 +12,16 @@ import io.alauda.devops.java.clusterregistry.client.models.V1alpha1ClusterList;
 import io.alauda.devops.java.clusterregistry.client.models.V1alpha1ObjectReference;
 import io.alauda.jenkins.devops.support.KubernetesCluster;
 import io.alauda.jenkins.devops.support.KubernetesClusterConfigurationListener;
-import io.kubernetes.client.ApiClient;
-import io.kubernetes.client.ApiException;
 import io.kubernetes.client.informer.ResourceEventHandler;
 import io.kubernetes.client.informer.SharedIndexInformer;
 import io.kubernetes.client.informer.SharedInformerFactory;
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.CallGeneratorParams;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -72,10 +72,9 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
             previousFactory.stopAllRegisteredInformers();
         }
 
-        apiClient.getHttpClient().setReadTimeout(0, TimeUnit.SECONDS); // infinite timeout
         SharedInformerFactory factory = new SharedInformerFactory();
         previousFactory = factory;
-        ClusterregistryK8sIoV1alpha1Api coreV1Api = new ClusterregistryK8sIoV1alpha1Api(apiClient);
+        ClusterregistryK8sIoV1alpha1Api coreV1Api = new ClusterregistryK8sIoV1alpha1Api();
 
         String namespace = new Devops.DescriptorImpl().getNamespace();
 
@@ -88,7 +87,7 @@ public class DefaultClusterRegistry implements ClusterRegistryExtension, Kuberne
                                         "", null, null,
                                         params.resourceVersion,
                                         params.timeoutSeconds,
-                                        params.watch, null, null);
+                                        params.watch, null);
                             } catch (ApiException e) {
                                 throw new RuntimeException(e);
                             }
