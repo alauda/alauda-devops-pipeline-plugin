@@ -2,6 +2,7 @@ package com.alauda.jenkins.plugins;
 
 import com.alauda.jenkins.plugins.cluster.ClusterRegistryExtension;
 import com.alauda.jenkins.plugins.cluster.DefaultClusterRegistry;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.Util;
@@ -31,6 +32,7 @@ public class Devops extends AbstractDescribableImpl<Devops> {
 
     @Extension
     @Symbol("alaudaDevOpsClientConfiguration")
+    @SuppressFBWarnings
     public static class DescriptorImpl extends Descriptor<Devops> {
         private static final long serialVersionUID = 1L;
 

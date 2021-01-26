@@ -7,6 +7,7 @@ import org.jenkinsci.plugins.workflow.steps.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Set;
@@ -62,7 +63,7 @@ public class Base64DecodeStep extends Step {
         @Override
         protected String run() throws Exception {
             byte[] decodeBytes = Base64.getDecoder().decode(encodedString);
-            return new String(decodeBytes);
+            return new String(decodeBytes, StandardCharsets.UTF_8);
         }
     }
 }

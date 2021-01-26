@@ -8,6 +8,7 @@ import com.alauda.jenkins.plugins.util.ClientCommandBuilder;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Strings;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+@SuppressFBWarnings
 public abstract class BaseStep extends Builder {
 
     public static final String DEFAULT_LOGLEVEL = "0";

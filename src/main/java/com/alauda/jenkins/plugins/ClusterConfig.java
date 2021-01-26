@@ -2,10 +2,8 @@ package com.alauda.jenkins.plugins;
 
 import com.alauda.jenkins.plugins.util.CredentialsUtils;
 import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardCertificateCredentials;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
@@ -228,14 +226,12 @@ public class ClusterConfig extends AbstractDescribableImpl<ClusterConfig> implem
      */
     private static class SimpleKubernetesAvailabilityTestClient {
         private String serverUrl;
-        private String defaultProject;
         private boolean skipTlsVerify;
         private String serverCertificate;
         private String token;
 
         SimpleKubernetesAvailabilityTestClient(String serverUrl, boolean skipTlsVerify, String serverCertificate, String token) {
             this.serverUrl = serverUrl;
-            this.defaultProject = defaultProject;
             this.skipTlsVerify = skipTlsVerify;
             this.serverCertificate = serverCertificate;
             this.token = token;

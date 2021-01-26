@@ -175,7 +175,7 @@ public class AcpWatch extends AbstractStepImpl {
                                         if (t.getCause() != null) {
                                             exceptionMsgs = exceptionMsgs + "; " + t.getCause().getMessage();
                                         }
-                                        listener.getLogger().println(String.format("\nwatch closure threw an exception: \"%s\".\n", exceptionMsgs));
+                                        listener.getLogger().println(String.format("%n watch closure threw an exception: \"%s\".%n", exceptionMsgs));
                                         getContext().onFailure(t);
                                         return null;
                                     }
